@@ -7,6 +7,7 @@
  *
  *
  * 04/22/2014 - Initial open source release
+ * 04/23/2014 - Change return type of crc32()
  *
  */
 
@@ -23,7 +24,7 @@ class CRC32 {
 public:
     CRC32(const uint32_t chunk_size);
 
-    uint32_t crc32(const std::string& filename) const;
+    int64_t crc32(const std::string& filename) const;
     
 private:
     uint32_t _crc32(uint32_t crc, const uint8_t *ptr, unsigned int len) const;

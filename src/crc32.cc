@@ -7,6 +7,8 @@
  *
  *
  * 04/22/2014 - Initial open source release
+ * 04/23/2014 - Change return type of crc32() and return -1 in failure
+ *              cases and close fd when done
  *
  */
 
@@ -65,7 +67,7 @@ CRC32::CRC32(const uint32_t chunk_size)
 }
 
 
-uint32_t CRC32::crc32(const std::string& filename) const
+int64_t CRC32::crc32(const std::string& filename) const
 {
     int fd;
     int bytes_read;
@@ -73,7 +75,7 @@ uint32_t CRC32::crc32(const std::string& filename) const
     uint8_t buffer[_chunk];
     
     if ((fd = open(filename.c_str(), O_RDONLY)) < 0) {
-	// log an error
+	return (-1);
     }
     
     
@@ -83,7 +85,8 @@ uint32_t CRC32::crc32(const std::string& filename) const
 	
 	bytes_read = read(fd, buffer, _chunk);
     }
-    
+
+    close(fd);
     return (crc);
 }
 
