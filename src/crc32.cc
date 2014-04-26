@@ -9,14 +9,17 @@
  * 04/22/2014 - Initial open source release
  * 04/23/2014 - Change return type of crc32() and return -1 in failure
  *              cases and close fd when done
- *
+ * 04/25/2014 - Change some data types, add assert
  */
+
+#include <cassert>
 
 #include "crc32.hpp"
 
 
 CRC32::CRC32(const uint32_t chunk_size)
 {
+    assert(chunk_size > 0);
     _chunk = chunk_size;
     
     _table = {
@@ -91,11 +94,11 @@ int64_t CRC32::crc32(const std::string& filename) const
 }
 
 
-uint32_t CRC32::_crc32(uint32_t crc, const uint8_t *ptr, unsigned int len) const
+uint32_t CRC32::_crc32(uint32_t crc, const uint8_t *ptr, const size_t len) const
 {
     crc ^= (~0UL);
     
-    for (unsigned int i = 0; i < len; ++i) {
+    for (size_t i = 0; i < len; ++i) {
 	crc = _table[(crc ^ *ptr++) & 0xFF] ^ (crc >> 8); 
     }
     

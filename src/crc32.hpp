@@ -8,6 +8,7 @@
  *
  * 04/22/2014 - Initial open source release
  * 04/23/2014 - Change return type of crc32()
+ * 04/25/2014 - change len to const size_t
  *
  */
 
@@ -27,7 +28,7 @@ public:
     int64_t crc32(const std::string& filename) const;
     
 private:
-    uint32_t _crc32(uint32_t crc, const uint8_t *ptr, unsigned int len) const;
+    uint32_t _crc32(uint32_t crc, const uint8_t *ptr, const size_t len) const;
     
     unsigned int _chunk;
     std::array<uint32_t, 256> _table;	
