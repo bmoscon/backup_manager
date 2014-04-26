@@ -17,9 +17,6 @@
 
 #include <array>
 
-#include <unistd.h>
-#include <fcntl.h>
-
 class CRC32 {
 
 public:

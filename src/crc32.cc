@@ -13,8 +13,11 @@
  */
 
 #include <cassert>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "crc32.hpp"
+#include "common.hpp"
 
 
 CRC32::CRC32(const uint32_t chunk_size)
@@ -86,7 +89,7 @@ int64_t CRC32::crc32(const std::string& filename) const
     while (bytes_read > 0) {
 	crc = _crc32(crc, buffer, bytes_read);
 	
-	bytes_read = read(fd, buffer, _chunk);
+	bytes_read = readall(fd, buffer, _chunk);
     }
 
     close(fd);
