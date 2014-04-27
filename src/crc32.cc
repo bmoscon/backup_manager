@@ -10,6 +10,8 @@
  * 04/23/2014 - Change return type of crc32() and return -1 in failure
  *              cases and close fd when done
  * 04/25/2014 - Change some data types, add assert
+ * 04/27/2014 - handle error return codes from readall()
+ *
  */
 
 #include <cassert>
@@ -90,6 +92,10 @@ int64_t CRC32::crc32(const std::string& filename) const
 	crc = _crc32(crc, buffer, bytes_read);
 	
 	bytes_read = readall(fd, buffer, _chunk);
+	if (bytes_read < 0) {
+	    close(fd);
+	    return (-1);
+	}
     }
 
     close(fd);
