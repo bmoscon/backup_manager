@@ -1,3 +1,17 @@
+/* CRC32 Tester
+ * 
+ * Uses Zlib CRC32 to compare CRCs with custom CRC32 lib
+ *
+ * 
+ * Copyright (c) 2014 Bryant Moscon - bmoscon@gmail.com
+ * 
+ * Please see the LICENSE file for the terms and conditions 
+ * associated with this software.
+ *
+ *
+ * 04/27/2014 - Initial open source release
+ */
+
 #include <iostream>
 #include <cassert>
 #include <fcntl.h>
