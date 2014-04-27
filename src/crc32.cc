@@ -87,7 +87,7 @@ int64_t CRC32::crc32(const std::string& filename) const
     }
     
     
-    bytes_read = read(fd, buffer, _chunk);
+    bytes_read = readall(fd, buffer, _chunk);
     while (bytes_read > 0) {
 	crc = _crc32(crc, buffer, bytes_read);
 	
