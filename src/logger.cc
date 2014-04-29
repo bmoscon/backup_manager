@@ -18,7 +18,7 @@
 Logger::Logger(const char *f) : _file(f, std::ios::out | std::ios::app), 
 				_log(_file),
 				_level(INFO),
-				_line_level(VERBOSE)
+				_line_level(DEBUG)
 {
     assert(_file.is_open());
 }
@@ -27,7 +27,7 @@ Logger::Logger(const char *f) : _file(f, std::ios::out | std::ios::app),
 Logger::Logger(const std::string& f) : _file(f.c_str(), std::ios::out | std::ios::app), 
 				       _log(_file),
 				       _level(INFO),
-				       _line_level(VERBOSE)
+				       _line_level(DEBUG)
 {
     assert(_file.is_open());
 }
@@ -55,7 +55,7 @@ void Logger::flush()
 	_log.flush();
 	str("");
     }
-    _line_level = VERBOSE;
+    _line_level = DEBUG;
 }
 
 
