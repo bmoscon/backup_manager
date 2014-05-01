@@ -53,8 +53,9 @@ void Logger::flush()
     if (_line_level >= _level) {
 	_log << get_time() << " -- [" << level_str(_line_level) << "] -- " << str();
 	_log.flush();
-	str("");
     }
+    
+    str("");
     _line_level = DEBUG;
 }
 
