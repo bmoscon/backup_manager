@@ -1,3 +1,14 @@
+/* Copy Test/Benchmark Tool
+ * 
+ * Copyright (c) 2014 Bryant Moscon - bmoscon@gmail.com
+ * 
+ * Please see the LICENSE file for the terms and conditions 
+ * associated with this software.
+ *
+ *
+ * 05/03/2014 - Initial open source release
+ */
+
 #include <iostream>
 #include <cstdio>
 #include <cassert>

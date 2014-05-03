@@ -10,4 +10,4 @@ copy:
 	g++ -o copy_test copy_test.cc ../common.cc -std=c++11 -I../
 
 clean:
-	rm crc32_test logger_test
+	rm crc32_test logger_test copy_test
