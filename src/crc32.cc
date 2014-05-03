@@ -75,7 +75,7 @@ CRC32::CRC32(const uint32_t chunk_size)
 }
 
 
-int64_t CRC32::crc32(const std::string& filename) const
+ssize_t CRC32::crc32(const std::string& filename) const
 {
     int fd;
     int bytes_read;
