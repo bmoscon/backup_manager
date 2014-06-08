@@ -11,6 +11,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <cstdio>
 #include <cassert>
 #include <cmath>
@@ -27,9 +28,12 @@
 #define OUT_FILE "/tmp/temp_out"
 
 
+typedef void (*copyfp)(const char*, const char*, const uint32_t);
+
 char buffer[1024 * 1024];
 std::vector<size_t> files;
 std::vector<size_t> chunks;
+std::vector<std::pair<copyfp, std::string>> functions;
 
 
 
@@ -59,7 +63,7 @@ static void buffer_init()
 }
 
 
-static void copyz(const char *in, const char *out, uint32_t chunk)
+static void copyz(const char *in, const char *out, const uint32_t chunk)
 {
     int p[2];
     pipe(p);
@@ -72,6 +76,45 @@ static void copyz(const char *in, const char *out, uint32_t chunk)
 
     close(out_fd);
     close(in_fd);
+}
+
+
+static void copyposix(const char *in, const char *out, const uint32_t chunk)
+{
+    char buffer[chunk];
+    ssize_t ret;
+    int out_fd = open(out, O_WRONLY | O_CREAT);
+    int in_fd = open(in, O_RDONLY);
+
+    assert(in_fd != -1);
+    assert(out_fd != -1);
+    
+    while ((ret = read(in_fd, buffer, chunk)) > 0) {
+	write(out_fd, buffer, ret);
+    }
+
+    close(out_fd);
+    close(in_fd);
+}
+
+
+static void copyansi(const char *in, const char *out, const uint32_t chunk)
+{
+   char buffer[chunk];
+   size_t ret;
+
+   FILE *src = fopen(in, "r");
+   FILE *dst = fopen(out, "w");
+   
+   assert(src != NULL);
+   assert(dst != NULL);
+
+   while (ret = fread(buffer, 1, chunk, src)) {
+       fwrite(buffer, 1, ret, dst);
+   }
+
+   fclose(dst);
+   fclose(src);
 }
 
 
@@ -100,9 +143,13 @@ int main()
 
     buffer_init();
 
+    functions.push_back(std::make_pair(copyz, "Zero Copy"));
+    functions.push_back(std::make_pair(copyposix, "POSIX"));
+    functions.push_back(std::make_pair(copyansi, "ANSI"));
+
     files.push_back(512);
     files.push_back(1024);
-    files.push_back(1024 * 5);
+    files.push_back(1024 * 2);
 
     chunks.push_back(1024 * 4);
     chunks.push_back(1024 * 32);
@@ -110,21 +157,24 @@ int main()
     chunks.push_back(1024 * 1024);
     chunks.push_back(1024 * 1024 * 4);
 
-    for (uint32_t file = 0; file < files.size(); ++file) {
-	for (uint32_t i = 0; i < chunks.size(); ++i) {
-	    std::string fname = create_file(files[file]);
-	    gettimeofday(&start, NULL);
-	    copyz(fname.c_str(), OUT_FILE, chunks[i]);
-	    gettimeofday(&end, NULL);
-	    result = time_diff(&start, &end);
-	    std::cout << "File of size " << files[file] << " took " << result.tv_sec;
-	    std::cout << " seconds and " << result.tv_usec << " microseconds with chunk size ";
-	    std::cout << chunks[i] << std::endl;
-	    assert(remove(OUT_FILE) == 0);
-	    assert(remove(fname.c_str()) == 0);
+    for (uint32_t fp = 0; fp < functions.size(); ++fp) {
+	std::cout << "COPY TYPE: " << functions[fp].second << std::endl;
+	std::cout << "file size in MB    seconds     \xC2\xB5seconds     chunk size" << std::endl;
+	std::cout << "======================================================" << std::endl;
+	for (uint32_t file = 0; file < files.size(); ++file) {
+	    for (uint32_t i = 0; i < chunks.size(); ++i) {
+		std::string fname = create_file(files[file]);
+		gettimeofday(&start, NULL);
+		functions[fp].first(fname.c_str(), OUT_FILE, chunks[i]);
+		gettimeofday(&end, NULL);
+		result = time_diff(&start, &end);
+		std::cout << std::setw(15) << files[file] << std::setw(11)<< result.tv_sec;
+		std::cout << std::setw(13) << result.tv_usec << std::setw(15) << chunks[i] << std::endl;
+		assert(remove(OUT_FILE) == 0);
+		assert(remove(fname.c_str()) == 0);
+	    }
 	}
     }
-    
     
     return (0);
 }
