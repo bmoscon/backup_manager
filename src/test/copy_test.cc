@@ -7,6 +7,7 @@
  *
  *
  * 05/03/2014 - Initial open source release
+ * 06/07/2014 - Changed computation of wall time to include microseconds
  */
 
 #include <iostream>
@@ -15,9 +16,9 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include <ctime>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include "common.hpp"
 
@@ -30,6 +31,23 @@ char buffer[1024 * 1024];
 std::vector<size_t> files;
 std::vector<size_t> chunks;
 
+
+
+struct timeval time_diff(const struct timeval *start, const struct timeval *stop)
+{
+    struct timeval result;
+
+    result.tv_sec = stop->tv_sec - start->tv_sec;
+
+    if (stop->tv_usec < start->tv_usec) {
+	result.tv_sec--;
+	result.tv_usec = stop->tv_usec + 1000000 - start->tv_usec;
+    } else {
+	result.tv_usec = stop->tv_usec - start->tv_usec;
+    }
+
+    return (result);
+} 
 
 
 // fill buffer with random characters A-Z
@@ -78,8 +96,7 @@ static std::string create_file(size_t size)
 
 int main()
 {
-    time_t start, end;
-    double diff;
+    struct timeval start, end, result;
 
     buffer_init();
 
@@ -96,11 +113,13 @@ int main()
     for (uint32_t file = 0; file < files.size(); ++file) {
 	for (uint32_t i = 0; i < chunks.size(); ++i) {
 	    std::string fname = create_file(files[file]);
-	    time(&start);
+	    gettimeofday(&start, NULL);
 	    copyz(fname.c_str(), OUT_FILE, chunks[i]);
-	    time(&end);
-	    diff = difftime(end, start);
-	    std::cout << "File of size " << files[file] << " took " << diff << " seconds with chunk size " << chunks[i] << std::endl;
+	    gettimeofday(&end, NULL);
+	    result = time_diff(&start, &end);
+	    std::cout << "File of size " << files[file] << " took " << result.tv_sec;
+	    std::cout << " seconds and " << result.tv_usec << " microseconds with chunk size ";
+	    std::cout << chunks[i] << std::endl;
 	    assert(remove(OUT_FILE) == 0);
 	    assert(remove(fname.c_str()) == 0);
 	}
