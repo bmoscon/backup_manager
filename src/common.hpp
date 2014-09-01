@@ -18,6 +18,14 @@
 
 ssize_t readall(const int& fd, uint8_t *buffer, const ssize_t& len);
 
+bool copyz(const char *in, const char *out, const uint32_t chunk);
 
+bool copyposix(const char *in, const char *out, const uint32_t chunk);
+
+bool copyansi(const char *in, const char *out, const uint32_t chunk);
+
+bool copylinux(const char *in, const char *out);
+
+bool copystreambuff(const char *in, const char *out);
 
 #endif

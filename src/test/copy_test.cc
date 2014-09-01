@@ -11,9 +11,7 @@
  */
 
 #include <iostream>
-#include <fstream>
 #include <iomanip>
-#include <cstdio>
 #include <cassert>
 #include <cmath>
 #include <string>
@@ -21,9 +19,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <sys/sendfile.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include "crc32.hpp"
 #include "common.hpp"
@@ -33,12 +28,22 @@
 #define OUT_FILE "/tmp/temp_out"
 
 
-typedef void (*copyfp)(const char*, const char*, const uint32_t);
+typedef bool (*copyfp_chunk)(const char*, const char*, const uint32_t);
+typedef bool (*copyfp)(const char*, const char*);
+
+typedef struct copy_type_st {
+    bool             chunk;
+    union {
+	copyfp_chunk fp_chunk;
+	copyfp       fp;
+    };
+    std::string     name; 
+} copy_type_st;
 
 char buffer[1024 * 1024];
 std::vector<size_t> files;
 std::vector<size_t> chunks;
-std::vector<std::pair<copyfp, std::string>> functions;
+std::vector<copy_type_st> functions;
 
 
 
@@ -68,89 +73,6 @@ static void buffer_init()
 }
 
 
-static void copyz(const char *in, const char *out, const uint32_t chunk)
-{
-    int p[2];
-    assert(pipe(p) != -1);
-    int out_fd = open(out, O_RDWR | O_CREAT, 0777);
-    int in_fd = open(in, O_RDONLY);
-    assert(in_fd != -1);
-    assert(out_fd != -1);
-    
-    while(splice(p[0], 0, out_fd, 0, splice(in_fd, 0, p[1], 0, chunk, 0), 0)>0);
-
-    close(out_fd);
-    close(in_fd);
-}
-
-
-static void copyposix(const char *in, const char *out, const uint32_t chunk)
-{
-    char buffer[chunk];
-    ssize_t ret;
-    int out_fd = open(out, O_RDWR | O_CREAT, 0777);
-    int in_fd = open(in, O_RDONLY);
-
-    assert(in_fd != -1);
-    assert(out_fd != -1);
-    
-    while ((ret = read(in_fd, buffer, chunk)) > 0) {
-	assert(write(out_fd, buffer, ret) != -1);
-    }
-
-    close(out_fd);
-    close(in_fd);
-}
-
-
-static void copyansi(const char *in, const char *out, const uint32_t chunk)
-{
-   char buffer[chunk];
-   size_t ret;
-
-   FILE *src = fopen(in, "r");
-   FILE *dst = fopen(out, "w");
-   
-   assert(src != NULL);
-   assert(dst != NULL);
-
-   while ((ret = fread(buffer, 1, chunk, src))) {
-       fwrite(buffer, 1, ret, dst);
-   }
-
-   fclose(dst);
-   fclose(src);
-}
-
-
-static void copylinux(const char *in, const char *out, const uint32_t UNUSED)
-{
-    int out_fd = open(out, O_RDWR | O_CREAT, 0777);
-    int in_fd = open(in, O_RDONLY);
-    
-    struct stat stat_;
-    fstat(in_fd, &stat_);
-
-    sendfile(out_fd, in_fd, 0, stat_.st_size);
-
-    close(out_fd);
-    close(in_fd);
-    
-}
-
-
-static void copystreambuff(const char *in, const char *out, const uint32_t UNUSED)
-{
-    std::ifstream src(in, std::ios::binary);
-    std::ofstream dst(out, std::ios::binary);
-
-    dst << src.rdbuf();
-
-    dst.close();
-    src.close();
-    
-}
-
 
 static bool match(const char *in, const char *out)
 {
@@ -158,7 +80,6 @@ static bool match(const char *in, const char *out)
     return (test.crc32(in) == test.crc32(out));
     
 }
-
 
 
 // Create a file of size megabytes
@@ -183,14 +104,31 @@ static std::string create_file(size_t size)
 int main()
 {
     struct timeval start, end, result;
+    copy_type_st copy;
 
     buffer_init();
 
-    functions.push_back(std::make_pair(copyz, "Zero Copy"));
-    functions.push_back(std::make_pair(copyposix, "POSIX"));
-    functions.push_back(std::make_pair(copyansi, "ANSI"));
-    functions.push_back(std::make_pair(copylinux, "LINUX"));
-    functions.push_back(std::make_pair(copystreambuff, "StreamBuff Copy"));
+    copy.chunk = true;
+    copy.name = "Zero Copy";
+    copy.fp_chunk = copyz;
+    functions.push_back(copy);
+    
+    copy.name = "POSIX";
+    copy.fp_chunk = copyposix;
+    functions.push_back(copy);
+    
+    copy.name = "ANSI";
+    copy.fp_chunk = copyansi;
+    functions.push_back(copy);
+
+    copy.chunk = false;
+    copy.name = "Linux";
+    copy.fp = copylinux;
+    functions.push_back(copy);
+
+    copy.name = "StreamBuffer";
+    copy.fp = copystreambuff;
+    functions.push_back(copy);
 
     files.push_back(512);
     files.push_back(1024);
@@ -203,21 +141,29 @@ int main()
     chunks.push_back(1024 * 1024 * 4);
 
     for (uint32_t fp = 0; fp < functions.size(); ++fp) {
-	std::cout << "COPY TYPE: " << functions[fp].second << std::endl;
+	std::cout << "COPY TYPE: " << functions[fp].name << std::endl;
 	std::cout << "file size in MB    seconds     \xC2\xB5seconds     chunk size    Match" << std::endl;
 	std::cout << "===============================================================" << std::endl;
 	for (uint32_t file = 0; file < files.size(); ++file) {
 	    for (uint32_t i = 0; i < chunks.size(); ++i) {
 		std::string fname = create_file(files[file]);
 		gettimeofday(&start, NULL);
-		functions[fp].first(fname.c_str(), OUT_FILE, chunks[i]);
+		if (functions[fp].chunk) {
+		    functions[fp].fp_chunk(fname.c_str(), OUT_FILE, chunks[i]);
+		} else {
+		    functions[fp].fp(fname.c_str(), OUT_FILE);
+		}
 		gettimeofday(&end, NULL);
 		result = time_diff(&start, &end);
 		std::cout << std::setw(15) << files[file] << std::setw(11)<< result.tv_sec;
-		std::cout << std::setw(13) << result.tv_usec << std::setw(15) << chunks[i] << std::setw(7);
+		std::cout << std::setw(13) << result.tv_usec << std::setw(15) << (functions[fp].chunk ? std::to_string(chunks[i]) : "NA") << std::setw(9);
 		std::cout << (match(fname.c_str(), OUT_FILE) ? "Yes" : "No")  << std::endl;
 		assert(remove(OUT_FILE) == 0);
 		assert(remove(fname.c_str()) == 0);
+
+		if (!functions[fp].chunk) {
+		    break;
+		}
 	    }
 	}
     }
