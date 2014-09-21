@@ -15,6 +15,7 @@
 #include <vector>
 #include <cstring>
 #include <thread>
+#include <mutex>
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -32,10 +33,13 @@ static void usage();
 static void send_stop();
 static bool lock_file(int&);
 static void stop_handler(int);
+static void set_state(const manager_state_e);
 static void worker_function(thread_data_st, int);
+static bool in_window(const std::string&, const std::string&);
 
 
 manager_state_e state = RUN;
+std::mutex lock;
 
 
 int main(int argc, char* argv[])
@@ -100,11 +104,15 @@ int main(int argc, char* argv[])
     // 4. if state changes to stop, wait for threads to finish and exit
     
     std::vector<thread_data_st> thread_work;
+    std::string start_time;
+    std::string stop_time;
     
     try {
 	ConfigParse config(argv[2]);
 	
 	int num_sets = std::stoi(config.getValue("Settings", "stores"));
+	start_time = config.getValue("Settings", "start_time");
+	stop_time = config.getValue("Settings", "stop_time");
 	
 	for (int i = 0; i < num_sets; ++i) {
 	    std::string store_name = "Store " + std::to_string(i + 1);
@@ -136,8 +144,17 @@ int main(int argc, char* argv[])
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
 
+    // the main thread loop does the following:
+    // 1. checks to see if we are in the time window; if not, pause work
+    // 2. checks config file for config updates
     while (state != STOP) {
-	sleep(2);
+	if (!in_window(start_time, stop_time)) {
+	    set_state(WAIT);
+	} else {
+	    set_state(RUN);
+	}
+
+	
     }
     
     for (uint32_t i = 0; i < workers.size(); ++i) {
@@ -191,7 +208,7 @@ static void send_stop()
 
 static void stop_handler(int signo)
 {
-    state = STOP;
+    set_state(STOP);
 }
 
 
@@ -231,7 +248,68 @@ static bool lock_file(int& fd)
 }
 
 
+static void set_state(const manager_state_e s)
+{
+    lock.lock();
+    // once we've been stopped we do not want to overwrite that state
+    if (state != STOP) {
+	state = s;
+    }
+    lock.unlock();
+    
+}
+
  static void worker_function(thread_data_st data, int id)
 {
     sleep(5);
+}
+
+
+static std::pair<int, int> parse_time(const std::string& time) 
+{
+    std::pair<int, int> ret;
+    
+    size_t pos = time.find(":");
+    ret.first = std::stoi(time.substr(pos-2, 2));
+    ret.second =  std::stoi(time.substr(pos+1, 2));
+    
+    return (ret);
+}
+
+std::string get_time()
+{
+    struct tm *timeinfo;
+    time_t rawtime;
+    char *time_buf;
+    
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    time_buf = asctime(timeinfo);
+    
+    std::string ret(time_buf);
+    if (!ret.empty() && ret[ret.length() - 1] == '\n') {
+	ret.erase(ret.length()-1);
+    }
+    
+    return (ret);
+}
+
+static bool in_window(const std::string& start, const std::string& stop)
+{
+    std::pair<int, int> time, stop_time, start_time;
+    time = parse_time(get_time());
+    start_time = parse_time(start);
+    stop_time = parse_time(stop);
+    
+    if ((time.first > start_time.first) || 
+	((time.first == start_time.first) && (time.second >= start_time.second))) {
+	return (true);
+    }
+    
+    if ((time.first < stop_time.first) || 
+	((time.first == stop_time.first) && (time.second < stop_time.second))) {
+	return (true);
+    }
+    
+    return (false);
 }
