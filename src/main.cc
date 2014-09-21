@@ -155,6 +155,18 @@ int main(int argc, char* argv[])
 	}
 
 	
+	try {
+	    ConfigParse config(argv[2]);
+	    
+	    int num_sets = std::stoi(config.getValue("Settings", "stores"));
+	    start_time = config.getValue("Settings", "start_time");
+	    stop_time = config.getValue("Settings", "stop_time");
+	} catch (ConfigParseEx& e) {
+	    // nothing to do here. we still have the old values for start/stop time
+	    // maybe the user will have fixed the config file the next time around
+	} 
+	
+	sleep(30);
     }
     
     for (uint32_t i = 0; i < workers.size(); ++i) {
