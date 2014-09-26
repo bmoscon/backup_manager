@@ -16,12 +16,14 @@
 #include <vector>
 #include <string>
 
+#include "logger.hpp"
+
 
 struct thread_data_st {
     std::string db_host;
     std::string db_user;
     std::string db_pass;
-    
+    logger_level log_level;
     std::vector<std::string> disks;
 };
 

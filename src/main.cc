@@ -7,7 +7,8 @@
  *
  *
  * 09/20/2014 - Initial open source release
- *
+ * 09/26/2014 - Logger Support in config file
+ *            - Add logging in main
  */
 
 #include <iostream>
@@ -24,6 +25,8 @@
 
 #include "config_parse.hpp"
 #include "defines.hpp"
+#include "logger.hpp"
+#include "backup_manager.hpp"
 
 
 #define LOCK_FILE "/var/run/backup_manager.pid"
@@ -40,6 +43,7 @@ static bool in_window(const std::string&, const std::string&);
 
 manager_state_e state = RUN;
 std::mutex lock;
+std::string log_path;
 
 
 int main(int argc, char* argv[])
@@ -106,6 +110,7 @@ int main(int argc, char* argv[])
     std::vector<thread_data_st> thread_work;
     std::string start_time;
     std::string stop_time;
+    logger_level log_level;
     
     try {
 	ConfigParse config(argv[2]);
@@ -113,6 +118,20 @@ int main(int argc, char* argv[])
 	int num_sets = std::stoi(config.getValue("Settings", "stores"));
 	start_time = config.getValue("Settings", "start_time");
 	stop_time = config.getValue("Settings", "stop_time");
+	log_path = config.getValue("Settings", "log_path");
+	std::string level = config.getValue("Settings", "log_level");
+	
+	if (level.compare("DEBUG") == 0) {
+	    log_level = DEBUG;
+	} else if (level.compare("INFO") == 0) {
+	    log_level = INFO;
+	} else if (level.compare("WARNING") == 0) {
+	    log_level = WARNING;
+	} else if (level.compare("ERROR") == 0) {
+	    log_level = ERROR;
+	} else {
+	    log_level = INFO;
+	}
 	
 	for (int i = 0; i < num_sets; ++i) {
 	    std::string store_name = "Store " + std::to_string(i + 1);
@@ -125,6 +144,7 @@ int main(int argc, char* argv[])
 	    
 	    thread_data_st data;
 	    data.disks = disk_list;
+	    data.log_level = log_level;
 	    thread_work.push_back(data);
 	}
 	    
@@ -132,7 +152,9 @@ int main(int argc, char* argv[])
 	std::cerr << e.what() << std::endl;
 	exit(EXIT_FAILURE);
     } 
-
+    Logger log(log_path + "backup_manager.main");
+    log << INFO << "Config parsed, starting " << thread_work.size() << " worker threads" 
+	<< std::endl;
 
     std::vector<std::thread> workers;
     for (uint32_t i = 0; i < thread_work.size(); ++i) {
@@ -140,17 +162,19 @@ int main(int argc, char* argv[])
     }
     
     // all output via logging now
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
+    //close(STDIN_FILENO);
+    //close(STDOUT_FILENO);
+    //close(STDERR_FILENO);
 
     // the main thread loop does the following:
     // 1. checks to see if we are in the time window; if not, pause work
     // 2. checks config file for config updates
     while (state != STOP) {
 	if (!in_window(start_time, stop_time)) {
+	    log << INFO << "Out of time window, setting state to WAIT" << std::endl;
 	    set_state(WAIT);
 	} else {
+	    log << INFO << "In time window, setting state to RUN" << std::endl;
 	    set_state(RUN);
 	}
 
@@ -158,20 +182,24 @@ int main(int argc, char* argv[])
 	try {
 	    ConfigParse config(argv[2]);
 	    
-	    int num_sets = std::stoi(config.getValue("Settings", "stores"));
 	    start_time = config.getValue("Settings", "start_time");
 	    stop_time = config.getValue("Settings", "stop_time");
 	} catch (ConfigParseEx& e) {
 	    // nothing to do here. we still have the old values for start/stop time
 	    // maybe the user will have fixed the config file the next time around
+	    log << WARNING << "Config parse failed with error " << e.what() << std::endl;
 	} 
 	
 	sleep(30);
     }
+
+    log << INFO << "Exiting main run loop, waiting for worker threads to exit" << std::endl;
     
     for (uint32_t i = 0; i < workers.size(); ++i) {
 	workers[i].join();
     }
+
+    log << INFO << "Workers all exited, cleaning up and shutting down" << std::endl;
     
     // We shouldnt make it here until manager stops, 
     // which wont happen unless we get a SIGTERM.
@@ -273,7 +301,15 @@ static void set_state(const manager_state_e s)
 
  static void worker_function(thread_data_st data, int id)
 {
-    sleep(5);
+    std::string log = log_path + "backup_manager." + std::to_string(id);
+    BackupManager b(data.disks, log, data.log_level);
+    
+    do {
+	if (state == WAIT) {
+	    sleep(30);
+	}
+	b.run(state);
+    } while(state != STOP);
 }
 
 
