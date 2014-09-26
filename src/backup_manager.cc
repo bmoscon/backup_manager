@@ -11,6 +11,8 @@
  */
 
 #include "backup_manager.hpp"
+#include "disk.hpp"
+
 #include <unistd.h>
 
 BackupManager::BackupManager(const std::vector<std::string>& disks, const std::string& log, 
