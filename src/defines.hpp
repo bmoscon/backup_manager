@@ -24,6 +24,7 @@ struct thread_data_st {
     std::string db_user;
     std::string db_pass;
     logger_level log_level;
+    uint64_t interval;
     std::vector<std::string> disks;
 };
 

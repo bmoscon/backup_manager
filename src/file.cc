@@ -7,6 +7,7 @@
  *
  *
  * 09/26/2014 - Initial open source release
+ * 09/27/2014 - Directory object added
  *
  */
 
@@ -15,6 +16,7 @@
 
 #include "file.hpp"
 #include "crc32.hpp"
+
 
 
 File::File() : path(""), name(""), size(0), modified(0), crc(0) {}
@@ -61,3 +63,6 @@ bool File::valid() const
 {
     return (path.empty() || name.empty());
 }
+
+
+Directory::Directory(const std::string& p, const std::vector<File>& f) : path(p), files(f) {}

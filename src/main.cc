@@ -120,6 +120,7 @@ int main(int argc, char* argv[])
 	stop_time = config.getValue("Settings", "stop_time");
 	log_path = config.getValue("Settings", "log_path");
 	std::string level = config.getValue("Settings", "log_level");
+	uint64_t interval = std::stoll(config.getValue("Settings", "completion_interval"));
 	
 	if (level.compare("DEBUG") == 0) {
 	    log_level = DEBUG;
@@ -145,6 +146,7 @@ int main(int argc, char* argv[])
 	    thread_data_st data;
 	    data.disks = disk_list;
 	    data.log_level = log_level;
+	    data.interval = interval;
 	    thread_work.push_back(data);
 	}
 	    
@@ -152,7 +154,7 @@ int main(int argc, char* argv[])
 	std::cerr << e.what() << std::endl;
 	exit(EXIT_FAILURE);
     } 
-    Logger log(log_path + "backup_manager.main");
+    Logger log(log_path + "/backup_manager.main");
     log << INFO << "Config parsed, starting " << thread_work.size() << " worker threads" 
 	<< std::endl;
 
@@ -301,15 +303,12 @@ static void set_state(const manager_state_e s)
 
  static void worker_function(thread_data_st data, int id)
 {
-    std::string log = log_path + "backup_manager." + std::to_string(id);
-    BackupManager b(data.disks, log, data.log_level);
+    std::string log = log_path + "/backup_manager." + std::to_string(id);
+    BackupManager b(data.disks, log, data.log_level, data.interval);
     
-    do {
-	if (state == WAIT) {
-	    sleep(30);
-	}
-	b.run(state);
-    } while(state != STOP);
+    // each thread shares the state with the main thread
+    // and will exit or pause as appropriate
+    b.run(state);
 }
 
 

@@ -22,13 +22,15 @@
 
 class BackupManager {
 public:
-    BackupManager(const std::vector<std::string>&, const std::string&, const logger_level);
+    BackupManager(const std::vector<std::string>&, const std::string&, const logger_level,
+		  const uint64_t&);
 
     void run(manager_state_e& state);
 
 private:
     std::vector<std::string> _disks;
     Logger _log;
+    uint64_t _interval;
 };
 
 #endif

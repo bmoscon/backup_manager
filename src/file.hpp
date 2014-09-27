@@ -7,6 +7,7 @@
  *
  *
  * 09/26/2014 - Initial open source release
+ * 09/27/2014 - Directory object added
  *
  */
 
@@ -14,6 +15,8 @@
 #define __FILE_OBJ__
 
 #include <string>
+#include <vector>
+
 
 struct File {
     std::string path;
@@ -29,5 +32,14 @@ struct File {
     bool identical(const File&) const;
     bool valid() const;    
 };
+
+
+struct Directory {
+    std::string        path;
+    std::vector<File>  files;
+
+    Directory(const std::string&, const std::vector<File>&);
+};
+
 
 #endif

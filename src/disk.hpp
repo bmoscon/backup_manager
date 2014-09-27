@@ -7,6 +7,7 @@
  *
  *
  * 09/26/2014 - Initial open source release
+ * 09/27/2014 - Directory support added
  *
  */
 
@@ -28,7 +29,7 @@
 class Disk {
 public:
     Disk(const std::string&, Logger*);
-    std::vector<File> next_directory();
+    Directory next_directory();
 
 private:
     std::string _mount;
