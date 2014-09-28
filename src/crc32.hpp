@@ -16,6 +16,7 @@
 #define __CRC32__
 
 #include <array>
+#include <string>
 
 class CRC32 {
 
