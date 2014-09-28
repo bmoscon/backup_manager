@@ -1,4 +1,4 @@
-all: crc32 logger copy
+all: crc32 logger copy file
 
 crc32:
 	g++ -Wall -o crc32_test crc32_test.cc ../src/crc32.cc ../src/common.cc -std=c++11 -I../src/ -lz
@@ -9,5 +9,8 @@ logger:
 copy:
 	g++ -O3 -Wall -o copy_test copy_test.cc ../src/crc32.cc ../src/common.cc -std=c++11 -I../src/ 
 
+file:
+	g++ -Wall -o file_test file_test.cc ../src/crc32.cc ../src/common.cc ../src/file.cc ../src/disk.cc ../src/logger.cc -std=c++11 -I../src/
+
 clean:
-	rm crc32_test logger_test copy_test
+	rm -f crc32_test logger_test copy_test file_test
