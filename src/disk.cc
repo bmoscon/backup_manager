@@ -8,9 +8,11 @@
  *
  * 09/26/2014 - Initial open source release
  * 09/27/2014 - Directory support added
+ * 09/28/2014 - populate directory name
  *
  */
 
+#include <unordered_map>
 #include <cstring>
 
 // would be nice to use ftw or nftw, but its a pain to 
@@ -31,7 +33,7 @@ Directory Disk::next_directory()
 {
     DIR *dir;
     struct dirent *entry;
-    std::vector<File> files;
+    std::unordered_map<std::string, File> files;
     std::string path;
     
     // need to keep checking until files is non-empty
@@ -52,7 +54,7 @@ Directory Disk::next_directory()
 	    
 	    while ((entry = readdir(dir)) != NULL) {
 		if (entry->d_type == DT_REG) {
-		    files.push_back(File(path + "/", entry->d_name));
+		    files.insert(std::make_pair(entry->d_name, File(path + "/", entry->d_name)));
 		} else if ((entry->d_type == DT_DIR) && 
 			   (strcmp(entry->d_name, ".") != 0) &&
 			   (strcmp(entry->d_name, "..") != 0)) {
@@ -64,7 +66,15 @@ Directory Disk::next_directory()
 	}
     }
     
-    Directory d(path, files);
+    std::string name;
+    
+    if (_mount.size() == path.size() || path.empty()) {
+	name = "/";
+    } else {
+	name = path.substr(_mount.size());
+    }
+    
+    Directory d(path, name, files);
     
     return (d);
 }

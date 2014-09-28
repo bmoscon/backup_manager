@@ -10,7 +10,7 @@
  * 09/27/2014 - Initial open source release
  */
 
-
+#include <unordered_map>
 #include <iostream>
 #include <cassert>
 #include <unistd.h>
@@ -41,12 +41,13 @@ int main()
 	
 	Disk disk(dir, &log);
 	Directory files = disk.next_directory();
-	
+
 	assert(files.path.compare(cwd) == 0);
 
-	for (uint32_t i = 0; i < files.files.size(); ++i) {
+	std::unordered_map<std::string, File>::const_iterator it; 
+	for (it = files.files.begin(); it != files.files.end(); ++it) {
 	    CRC32 c(1024);
-	    assert(files.files[i].crc == c.crc32(files.files[i].name));
+	    assert(it->second.crc == c.crc32(it->second.name));
 	}
 
 	glob_t g;

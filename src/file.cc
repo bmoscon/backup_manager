@@ -8,10 +8,10 @@
  *
  * 09/26/2014 - Initial open source release
  * 09/27/2014 - Directory object added
+ * 09/28/2014 - Files in directory changed to hash map
  *
  */
 
-#include <string>
 #include <sys/stat.h>
 
 #include "file.hpp"
@@ -54,10 +54,18 @@ bool File::operator==(const File& f) const
 	    (name.compare(f.name) == 0));
 }
 
+
+bool File::operator!=(const File& f) const
+{
+    return (!((*this) == f));
+}
+
+
 bool File::identical(const File& f) const
 {
     return (((*this) == f) && (path.compare(f.path) == 0));
 }
+
 
 bool File::valid() const
 {
@@ -65,4 +73,12 @@ bool File::valid() const
 }
 
 
-Directory::Directory(const std::string& p, const std::vector<File>& f) : path(p), files(f) {}
+Directory::Directory(const std::string& p, const std::string& n, 
+		     const std::unordered_map<std::string, File>& f) : 
+    path(p), name(n), files(f) {}
+
+
+bool Directory::empty() const
+{
+    return (this->files.empty());
+}

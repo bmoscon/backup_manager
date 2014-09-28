@@ -164,9 +164,9 @@ int main(int argc, char* argv[])
     }
     
     // all output via logging now
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
+    //close(STDIN_FILENO);
+    //close(STDOUT_FILENO);
+    //close(STDERR_FILENO);
 
     // the main thread loop does the following:
     // 1. checks to see if we are in the time window; if not, pause work

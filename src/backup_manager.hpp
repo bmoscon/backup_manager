@@ -15,9 +15,11 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 #include "defines.hpp"
 #include "logger.hpp"
+#include "disk.hpp"
 
 
 class BackupManager {
@@ -28,9 +30,13 @@ public:
     void run(manager_state_e& state);
 
 private:
+    void dir_check(const std::vector<Directory>&);
+
     std::vector<std::string> _disks;
+    std::vector<std::unordered_map<std::string, Directory> > _reconcile;
     Logger _log;
     uint64_t _interval;
+    
 };
 
 #endif

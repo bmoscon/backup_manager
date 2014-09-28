@@ -8,6 +8,7 @@
  *
  * 09/26/2014 - Initial open source release
  * 09/27/2014 - Directory object added
+ * 09/28/2014 - Files in directory changed to hash map
  *
  */
 
@@ -15,7 +16,7 @@
 #define __FILE_OBJ__
 
 #include <string>
-#include <vector>
+#include <unordered_map>
 
 
 struct File {
@@ -29,16 +30,21 @@ struct File {
     File(const std::string&, const std::string&, const uint64_t&, const uint64_t&, const uint32_t&);
     File(const std::string&, const std::string&);
     bool operator==(const File&) const;
+    bool operator!=(const File&) const;
     bool identical(const File&) const;
     bool valid() const;    
 };
 
 
 struct Directory {
-    std::string        path;
-    std::vector<File>  files;
+    std::string                            path;
+    std::string                            name;
+    std::unordered_map<std::string, File>  files;
 
-    Directory(const std::string&, const std::vector<File>&);
+    Directory(const std::string&, const std::string&, 
+	      const std::unordered_map<std::string, File>&);
+
+    bool empty() const;
 };
 
 
