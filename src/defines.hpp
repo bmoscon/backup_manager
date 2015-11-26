@@ -20,7 +20,7 @@
 
 
 struct thread_data_st {
-    std::string db_host;
+    std::string db_ip;
     std::string db_user;
     std::string db_pass;
     logger_level log_level;

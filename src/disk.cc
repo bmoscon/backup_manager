@@ -1,6 +1,6 @@
 /* Backup Manager Disk Object
  * 
- * Copyright (c) 2012-2014 Bryant Moscon - bmoscon@gmail.com
+ * Copyright (c) 2012-2015 Bryant Moscon - bmoscon@gmail.com
  * 
  * Please see the LICENSE file for the terms and conditions 
  * associated with this software.
@@ -9,6 +9,7 @@
  * 09/26/2014 - Initial open source release
  * 09/27/2014 - Directory support added
  * 09/28/2014 - populate directory name
+ * 11/26/2015 - bugfix: files have consistent paths now
  *
  */
 
@@ -54,7 +55,7 @@ Directory Disk::next_directory()
 	    
 	    while ((entry = readdir(dir)) != NULL) {
 		if (entry->d_type == DT_REG) {
-		    files.insert(std::make_pair(entry->d_name, File(path + "/", entry->d_name)));
+		    files.insert(std::make_pair(entry->d_name, File(path, entry->d_name)));
 		} else if ((entry->d_type == DT_DIR) && 
 			   (strcmp(entry->d_name, ".") != 0) &&
 			   (strcmp(entry->d_name, "..") != 0)) {

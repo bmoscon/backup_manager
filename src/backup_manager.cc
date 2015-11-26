@@ -8,6 +8,7 @@
  *
  * 09/21/2014 - Initial open source release
  * 09/28/2014 - Handle missing files
+ * 10/05/2014 - Initial DB integration
  *
  */
 
@@ -19,9 +20,12 @@
 #include "common.hpp"
 
 
+
 BackupManager::BackupManager(const std::vector<std::string>& disks, const std::string& log, 
-			     const logger_level lvl, const uint64_t& interval) : 
-    _disks(disks), _log(log), _interval(interval)
+			     const logger_level lvl, const uint64_t& interval,
+			     const std::string& user, const std::string& pass, 
+			     const std::string& ip) 
+    : _disks(disks), _log(log), _interval(interval), _db(ip, user, pass, &_log)
 {
     _log.set_level(lvl);
 }
@@ -53,12 +57,16 @@ void BackupManager::run(manager_state_e& state)
 	    _log << INFO << "In loop " << std::endl;
 	}
 
+	db_check(files);
 	dir_check(files);
 	 
 	
 	// check if we have completed the disk
 	if (files.empty() || 
 	    std::all_of(files.begin(), files.end(), [](Directory d){return d.empty();})) {
+	    // we're done with the scan so run the DB pruner
+	    db_prune();
+	    
 	    // get completion time
 	    time_t start_again = std::time(0) + _interval * 60;
 	    
@@ -85,6 +93,38 @@ void BackupManager::run(manager_state_e& state)
     } while (state != STOP);
     
     _log << DEBUG << "Leaving run()" << std::endl;
+}
+
+
+/* Check files on disk against what is in the database
+ *
+ * Entry in DB for file? 
+ * - Yes? - Do CRCs Match?
+ * - - Yes - we're done
+ * - - No - Do timestamps match?
+ * - - - Yes? File is corrupted or otherwise damaged, see if we can restore it from a copy
+ * - - - No? Update the database with the new timestamp and CRC
+ * - No? - Add entry
+ *
+ * update last checked timestamp
+ *
+ */
+void BackupManager::db_check(const std::vector<Directory>& dirs)
+{
+    for (uint32_t i = 0; i < dirs.size(); ++i) {
+	Directory db_dir = _db.get_directory(dirs[i]);
+    }
+}
+
+/* DB Pruner
+ *
+ * Remove DB entries for files that were not checked. 
+ * Presumably they were not checked because they have been deleted
+ *
+ */ 
+void BackupManager::db_prune()
+{
+    
 }
 
 

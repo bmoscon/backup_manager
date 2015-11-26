@@ -1,10 +1,10 @@
 CC = g++
-CCFLAGS = -Wall -Werror -std=c++11 -ggdb3
+CCFLAGS = -Wall -Werror -std=c++11 -ggdb3 -I/usr/include/mysql
 
 HEADERS = $(wildcard *.hpp)
 SRC     = $(wildcard *.cc)
 OBJ     = $(subst .cc,.o,$(SRC))
-LIBS    = -lpthread
+LIBS    = -lpthread -lmysqlclient -lmysqlcppconn
 
 
 all: backup_manager

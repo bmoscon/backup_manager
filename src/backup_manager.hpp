@@ -20,22 +20,26 @@
 #include "defines.hpp"
 #include "logger.hpp"
 #include "disk.hpp"
+#include "db.hpp"
 
 
 class BackupManager {
 public:
     BackupManager(const std::vector<std::string>&, const std::string&, const logger_level,
-		  const uint64_t&);
+		  const uint64_t&, const std::string&, const std::string&, const std::string&);
 
     void run(manager_state_e& state);
 
 private:
     void dir_check(const std::vector<Directory>&);
+    void db_check(const std::vector<Directory>&);
+    void db_prune();
 
     std::vector<std::string> _disks;
     std::vector<std::unordered_map<std::string, Directory> > _reconcile;
     Logger _log;
     uint64_t _interval;
+    BackupManagerDB _db;
     
 };
 

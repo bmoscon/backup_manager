@@ -1,6 +1,6 @@
 /* Backup Manager File Object
  * 
- * Copyright (c) 2012-2014 Bryant Moscon - bmoscon@gmail.com
+ * Copyright (c) 2012-2015 Bryant Moscon - bmoscon@gmail.com
  * 
  * Please see the LICENSE file for the terms and conditions 
  * associated with this software.
@@ -9,6 +9,8 @@
  * 09/26/2014 - Initial open source release
  * 09/27/2014 - Directory object added
  * 09/28/2014 - Files in directory changed to hash map
+ * 10/06/2014 - add new constructor for Directory
+ * 11/26/2015 - various improvements
  *
  */
 
@@ -17,6 +19,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <ostream>
 
 
 struct File {
@@ -41,11 +44,17 @@ struct Directory {
     std::string                            name;
     std::unordered_map<std::string, File>  files;
 
+    Directory();
     Directory(const std::string&, const std::string&, 
 	      const std::unordered_map<std::string, File>&);
 
     bool empty() const;
+    bool valid() const;
 };
 
+typedef std::unordered_map<std::string, File>::const_iterator file_cit;
+
+std::ostream& operator<<(std::ostream&, const Directory&);
+std::ostream& operator<<(std::ostream&, const File&); 
 
 #endif

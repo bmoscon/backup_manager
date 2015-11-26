@@ -111,6 +111,8 @@ int main(int argc, char* argv[])
     std::string start_time;
     std::string stop_time;
     logger_level log_level;
+
+    std::string db_ip, db_pass, db_user;
     
     try {
 	ConfigParse config(argv[2]);
@@ -121,6 +123,10 @@ int main(int argc, char* argv[])
 	log_path = config.getValue("Settings", "log_path");
 	std::string level = config.getValue("Settings", "log_level");
 	uint64_t interval = std::stoll(config.getValue("Settings", "completion_interval"));
+	db_ip = config.getValue("Settings", "db_ip");
+	db_pass = config.getValue("Settings", "db_pass");
+	db_user = config.getValue("Settings", "db_user");
+	
 	
 	if (level.compare("DEBUG") == 0) {
 	    log_level = DEBUG;
@@ -147,6 +153,9 @@ int main(int argc, char* argv[])
 	    data.disks = disk_list;
 	    data.log_level = log_level;
 	    data.interval = interval;
+	    data.db_user = db_user;
+	    data.db_pass = db_pass;
+	    data.db_ip = db_ip;
 	    thread_work.push_back(data);
 	}
 	    
@@ -304,7 +313,8 @@ static void set_state(const manager_state_e s)
  static void worker_function(thread_data_st data, int id)
 {
     std::string log = log_path + "/backup_manager." + std::to_string(id);
-    BackupManager b(data.disks, log, data.log_level, data.interval);
+    BackupManager b(data.disks, log, data.log_level, data.interval, data.db_user, 
+		    data.db_pass, data.db_ip);
     
     // each thread shares the state with the main thread
     // and will exit or pause as appropriate

@@ -1,6 +1,6 @@
 /* Backup Manager File Object
  * 
- * Copyright (c) 2012-2014 Bryant Moscon - bmoscon@gmail.com
+ * Copyright (c) 2012-2015 Bryant Moscon - bmoscon@gmail.com
  * 
  * Please see the LICENSE file for the terms and conditions 
  * associated with this software.
@@ -9,6 +9,8 @@
  * 09/26/2014 - Initial open source release
  * 09/27/2014 - Directory object added
  * 09/28/2014 - Files in directory changed to hash map
+ * 10/06/2014 - add new constructor for Directory
+ * 11/26/2015 - various improvements
  *
  */
 
@@ -35,7 +37,7 @@ File::File(const std::string& p, const std::string& n)
     path = p;
     name = n;
     
-    std::string full_path = p + n;
+    std::string full_path = p + "/" + n;
     
     CRC32 c(4096);
     crc = c.crc32(full_path);
@@ -73,6 +75,9 @@ bool File::valid() const
 }
 
 
+Directory::Directory() : path(""), name("") {}
+
+
 Directory::Directory(const std::string& p, const std::string& n, 
 		     const std::unordered_map<std::string, File>& f) : 
     path(p), name(n), files(f) {}
@@ -81,4 +86,27 @@ Directory::Directory(const std::string& p, const std::string& n,
 bool Directory::empty() const
 {
     return (this->files.empty());
+}
+
+
+bool Directory::valid() const
+{
+    return (path.size() && name.size());
+}
+
+
+std::ostream& operator<<(std::ostream& os, const Directory& d)
+{
+    os << d.path << std::endl;
+    for (auto i = d.files.cbegin(); i != d.files.cend(); ++i) {
+	os << "    " << i->second << std::endl;
+    }
+    return (os);
+}
+
+
+std::ostream& operator<<(std::ostream& os, const File& f)
+{
+    os << f.name;
+    return (os);
 }
