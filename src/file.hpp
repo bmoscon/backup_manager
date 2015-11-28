@@ -11,6 +11,7 @@
  * 09/28/2014 - Files in directory changed to hash map
  * 10/06/2014 - add new constructor for Directory
  * 11/26/2015 - various improvements
+ * 11/27/2015 - directory comparison
  *
  */
 
@@ -50,6 +51,8 @@ struct Directory {
 
     bool empty() const;
     bool valid() const;
+    bool operator==(const Directory&) const;
+    bool identical(const Directory&) const;
 };
 
 typedef std::unordered_map<std::string, File>::const_iterator file_cit;

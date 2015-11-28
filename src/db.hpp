@@ -37,9 +37,9 @@ public:
     void insert(const File&);
     bool exists(const File&);
     void drop_tables();
+    void init_tables();
      
 private:
-    void init_tables();
     uint32_t get_dir_id(const std::string&);
     
     Logger *_log;

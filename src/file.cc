@@ -11,6 +11,7 @@
  * 09/28/2014 - Files in directory changed to hash map
  * 10/06/2014 - add new constructor for Directory
  * 11/26/2015 - various improvements
+ * 11/27/2015 - directory comparison
  *
  */
 
@@ -94,6 +95,25 @@ bool Directory::valid() const
     return (path.size() && name.size());
 }
 
+
+bool Directory::operator==(const Directory& d) const
+{
+    return ((name == d.name) && (files == d.files));
+}
+
+
+bool Directory::identical(const Directory& d) const
+{
+    if (name == d.name && path == d.path && files.size() == d.files.size()) {
+	for (file_cit i = files.cbegin(); i != files.cend(); ++i) {
+	    if (d.files.find(i->first) == d.files.cend()) {
+		return (false);
+	    }
+	}
+	return (true);
+    }
+    return (false);
+}
 
 std::ostream& operator<<(std::ostream& os, const Directory& d)
 {
