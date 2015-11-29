@@ -1,3 +1,14 @@
+/* DB Test Code
+ * 
+ * Copyright (c) 2015 Bryant Moscon - bmoscon@gmail.com
+ * 
+ * Please see the LICENSE file for the terms and conditions 
+ * associated with this software.
+ *
+ *
+ * 11/28/2015- Initial open source release
+ */
+
 #include <cassert>
 #include <iostream>
 #include <exception>
@@ -5,12 +16,22 @@
 #include "db.hpp"
 #include "disk.hpp"
 
-
-int main()
+static void usage()
 {
-    Logger l("/home/bryant/test.log");
-    BackupManagerDB db("192.168.86.21", "bryant", "password", &l);
-    Disk disk("/home/bryant/fileshare/open_source/backup_manager", &l);
+    std::cout << "db_test [log path] [DB IP] [DB User] [DB Pass] [Dir path]" << std::endl;
+}
+
+int main(int argc, char* argv[])
+{
+
+    if (argc != 6) {
+	usage();
+	return (1);
+    }
+    
+    Logger l(argv[1]);
+    BackupManagerDB db(argv[2], argv[3], argv[4], &l);
+    Disk disk(argv[5], &l);
     Directory dir;
 
     db.set_db("backup_manager_test", "Directories", "Files");
