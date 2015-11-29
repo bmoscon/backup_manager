@@ -25,6 +25,10 @@ BackupManagerDB::BackupManagerDB(const std::string& ip, const std::string& user,
     }  catch (sql::SQLException& e) {
 	(*_log) << ERROR << "DB Exception: " << e.what() << std::endl;
     }
+
+    _db_name = "backup_maanger";
+    _dir_table = "Directories";
+    _file_table = "Files";
 }
 
 
