@@ -25,9 +25,8 @@ BackupManagerDB::BackupManagerDB(const std::string& ip, const std::string& user,
     }  catch (sql::SQLException& e) {
 	(*_log) << ERROR << "DB Exception: " << e.what() << std::endl;
     }
-
-    init_tables();
 }
+
 
 BackupManagerDB::~BackupManagerDB()
 {
@@ -35,21 +34,28 @@ BackupManagerDB::~BackupManagerDB()
     delete _stmt;
     delete _conn;
 }
-    
+
+
+void BackupManagerDB::set_db(const std::string& db, const std::string& dir, const std::string& file)
+{
+    _db_name = db;
+    _dir_table = dir;
+    _file_table = file;
+}
 
 void BackupManagerDB::init_tables()
 {
     try{
-	_stmt->execute("CREATE DATABASE IF NOT EXISTS backup_manager");
-	_stmt->execute("USE backup_manager");
+	_stmt->execute("CREATE DATABASE IF NOT EXISTS " + _db_name);
+	_stmt->execute("USE " + _db_name);
 	
-	_stmt->execute("CREATE TABLE IF NOT EXISTS Directories"
+	_stmt->execute("CREATE TABLE IF NOT EXISTS " + _dir_table + " "
 		       "(DirID INT AUTO_INCREMENT,"
 		       "Path VARCHAR(4096),"
 		       "Name VARCHAR(255),"
 		       "PRIMARY KEY(DirID)) ENGINE=InnoDB");
 	
-	_stmt->execute("CREATE TABLE IF NOT EXISTS Files "
+	_stmt->execute("CREATE TABLE IF NOT EXISTS " + _file_table + " "
 		       "(FileID INT AUTO_INCREMENT,"
 		       "Dir INT,"
 		       "Path VARCHAR(4096),"
@@ -59,7 +65,7 @@ void BackupManagerDB::init_tables()
 		       "CRC32 BIGINT,"
 		       "LastChecked BIGINT,"
 		       "PRIMARY KEY(FileID),"
-		       "FOREIGN KEY(Dir) REFERENCES Directories(DirID)"
+		       "FOREIGN KEY(Dir) REFERENCES " + _dir_table + "(DirID)"
 		       "ON DELETE CASCADE) ENGINE=InnoDB");
 	
 	_conn->commit();
@@ -71,15 +77,22 @@ void BackupManagerDB::init_tables()
 
 void BackupManagerDB::drop_tables()
 {
-    _stmt->execute("DROP TABLE Files;");
-    _stmt->execute("DROP TABLE Directories;");
+    _stmt->execute("DROP TABLE IF EXISTS " + _file_table + ";");
+    _stmt->execute("DROP TABLE IF EXISTS " + _dir_table + ";");
     _conn->commit();		   
+}
+
+
+void BackupManagerDB::drop_db()
+{
+    _stmt->execute("DROP DATABASE IF EXISTS " + _db_name + ";");
+    _conn->commit();
 }
 
 
 uint32_t BackupManagerDB::get_dir_id(const std::string& path)
 {
-    _res = _stmt->executeQuery("SELECT DirID FROM Directories WHERE "
+    _res = _stmt->executeQuery("SELECT DirID FROM " + _dir_table + " WHERE "
 			       "Path = \"" + path + "\";");
     _res->next();
     uint32_t id = _res->getInt(1);
@@ -91,7 +104,7 @@ uint32_t BackupManagerDB::get_dir_id(const std::string& path)
 
 Directory BackupManagerDB::get(const Directory& dir)
 {
-    _res = _stmt->executeQuery("SELECT DirID FROM Directories WHERE "
+    _res = _stmt->executeQuery("SELECT DirID FROM " + _dir_table + " WHERE "
 			       "Path = \"" + dir.path + "\";");
     
     Directory ret;
@@ -102,7 +115,8 @@ Directory BackupManagerDB::get(const Directory& dir)
 	ret.name = dir.name;
 
 	delete _res;
-	_res = _stmt->executeQuery("SELECT * FROM Files WHERE Dir = " + std::to_string(id) + ";");
+	_res = _stmt->executeQuery("SELECT * FROM " + _file_table + " WHERE Dir = "
+				   + std::to_string(id) + ";");
 	
 	while(_res->next()) {
 	    File f;
@@ -124,7 +138,7 @@ Directory BackupManagerDB::get(const Directory& dir)
 
 bool BackupManagerDB::exists(const Directory& dir)
 {
-    _res = _stmt->executeQuery("SELECT DirID FROM Directories WHERE "
+    _res = _stmt->executeQuery("SELECT DirID FROM " + _dir_table + " WHERE "
 			       "Path = \"" + dir.path + "\";");
     if (_res->next()) {
 	delete _res;
@@ -138,8 +152,9 @@ bool BackupManagerDB::exists(const Directory& dir)
 
 bool BackupManagerDB::exists(const File& file)
 {
-    _res = _stmt->executeQuery("SELECT FileID FROM Files WHERE "
-			       "Path = \"" + file.path + "\" AND FileName = \"" + file.name + "\";");
+    _res = _stmt->executeQuery("SELECT FileID FROM " + _file_table + " WHERE "
+			       "Path = \"" + file.path + "\" AND FileName = \""
+			       + file.name + "\";");
     if (_res->next()) {
 	delete _res;
 	return (true);
@@ -152,7 +167,7 @@ bool BackupManagerDB::exists(const File& file)
 void BackupManagerDB::insert(const Directory& dir)
 {
     if (!exists(dir)) {
-	_stmt->execute("INSERT INTO Directories (Path, Name) VALUES (\"" +
+	_stmt->execute("INSERT INTO " + _dir_table + " (Path, Name) VALUES (\"" +
 		       dir.path + "\", \"" + dir.name + "\");");
 	_conn->commit();
     }
@@ -169,8 +184,10 @@ void BackupManagerDB::insert(const File& file)
 {
     if (!exists(file)) {
 	uint32_t id = get_dir_id(file.path);
-	_stmt->execute("INSERT INTO Files (Dir, Path, FileName, FileSize, FileModified, CRC32, LastChecked)"
-		       " VALUES (" + std::to_string(id) + ", \"" + file.path + "\", \"" + file.name + "\", " + std::to_string(file.size) + ", " +
+	_stmt->execute("INSERT INTO " + _file_table + " (Dir, Path, FileName, FileSize, "
+		       "FileModified, CRC32, LastChecked)"
+		       " VALUES (" + std::to_string(id) + ", \"" + file.path + "\", \""
+		       + file.name + "\", " + std::to_string(file.size) + ", " +
 		       std::to_string(file.modified) + ", " + std::to_string(file.crc) + ", 0);"); 
     }
 }

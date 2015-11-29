@@ -41,7 +41,7 @@ void BackupManager::run(manager_state_e& state)
     do {
 	// check if this we are starting a new run
 	if (files.empty() || 
-	    std::all_of(files.begin(), files.end(), [](Directory d){return d.empty();})) {
+	    std::all_of(files.begin(), files.end(), [](Directory d){return d.valid();})) {
 	    disks.clear();
 	    _reconcile.resize(_disks.size());
 	    // create a disk object for each mount/disk
@@ -63,7 +63,7 @@ void BackupManager::run(manager_state_e& state)
 	
 	// check if we have completed the disk
 	if (files.empty() || 
-	    std::all_of(files.begin(), files.end(), [](Directory d){return d.empty();})) {
+	    std::all_of(files.begin(), files.end(), [](Directory d){return d.valid();})) {
 	    // we're done with the scan so run the DB pruner
 	    db_prune();
 	    

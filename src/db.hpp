@@ -37,6 +37,8 @@ public:
     void insert(const File&);
     bool exists(const File&);
     void drop_tables();
+    void drop_db();
+    void set_db(const std::string&, const std::string&, const std::string&);
     void init_tables();
      
 private:
@@ -47,6 +49,10 @@ private:
     sql::Connection *_conn;
     sql::Statement *_stmt;
     sql::ResultSet *_res;
+
+    std::string _db_name;
+    std::string _dir_table;
+    std::string _file_table;
     
 };
 
