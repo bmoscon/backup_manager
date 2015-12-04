@@ -29,6 +29,7 @@ struct File {
     uint64_t    size;
     uint64_t    modified;
     uint32_t    crc;
+    uint64_t    checked;
 
     File();
     File(const std::string&, const std::string&, const uint64_t&, const uint64_t&, const uint32_t&);

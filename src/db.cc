@@ -11,6 +11,8 @@
  *
  */
 
+#include <cassert>
+
 #include "db.hpp"
 
 
@@ -192,6 +194,20 @@ void BackupManagerDB::insert(const File& file)
 		       "FileModified, CRC32, LastChecked)"
 		       " VALUES (" + std::to_string(id) + ", \"" + file.path + "\", \""
 		       + file.name + "\", " + std::to_string(file.size) + ", " +
-		       std::to_string(file.modified) + ", " + std::to_string(file.crc) + ", 0);"); 
+		       std::to_string(file.modified) + ", " + std::to_string(file.crc) +
+		       ", " + std::to_string(file.checked) + ");"); 
     }
 }
+
+
+void BackupManagerDB::update(const File& file)
+{
+    assert(exists(file));
+    _stmt->execute("UPDATE " + _file_table +
+		   " FileSize=" + std::to_string(file.size) + ", "
+		   "FileModified=" + std::to_string(file.modified) + ", "
+		   "CRC32=" + std::to_string(file.crc) + ", "
+		   "LastChecked=" + std::to_string(file.checked) + " "
+		   "WHERE Path=" + file.path + " AND FileName=" + file.name + ";");
+}
+

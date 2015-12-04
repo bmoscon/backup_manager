@@ -40,6 +40,7 @@ public:
     void drop_db();
     void set_db(const std::string&, const std::string&, const std::string&);
     void init_tables();
+    void update(const File&);
      
 private:
     uint32_t get_dir_id(const std::string&);

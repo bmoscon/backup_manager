@@ -22,7 +22,7 @@
 
 
 
-File::File() : path(""), name(""), size(0), modified(0), crc(0) {}
+File::File() : path(""), name(""), size(0), modified(0), crc(0), checked(0) {}
 
 
 File::File(const std::string& p, const std::string& n, const uint64_t& s, const uint64_t& m, 
@@ -30,7 +30,8 @@ File::File(const std::string& p, const std::string& n, const uint64_t& s, const 
 				name(n), 
 				size(s), 
 				modified(m), 
-				crc(c) {}
+				crc(c),
+                                checked(0){}
 
 
 File::File(const std::string& p, const std::string& n)
@@ -48,6 +49,8 @@ File::File(const std::string& p, const std::string& n)
     
     size = s.st_size;
     modified = s.st_mtime;
+
+    checked = 0;
 }
 
 
