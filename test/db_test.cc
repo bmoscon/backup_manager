@@ -46,6 +46,14 @@ int main(int argc, char* argv[])
 	    auto d = db.get(dir);
 	    assert(d.identical(dir));
 	    assert(d == dir);
+
+	    for(auto f = dir.files.begin(); f != dir.files.end(); ++f) {
+		f->second.checked = 0xFFFF;
+		db.update(f->second);
+		auto tmp = db.get(dir);
+		auto r = tmp.files.find(f->first);
+		assert(r->second.checked == f->second.checked);
+	    }
 	}
     } catch (std::exception& e) {
 	std::cout << e.what() << std::endl;
@@ -53,6 +61,7 @@ int main(int argc, char* argv[])
 	db.drop_db();
 	return (1);
     }
+
     
     db.drop_tables();
     db.drop_db();

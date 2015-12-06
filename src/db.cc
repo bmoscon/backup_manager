@@ -131,6 +131,7 @@ Directory BackupManagerDB::get(const Directory& dir)
 	    f.modified = _res->getInt(5);
 	    f.size = _res->getInt(6);
 	    f.crc = _res->getInt(7);
+	    f.checked = _res->getInt(8);
 	    
 	    ret.files.insert(std::make_pair(f.name, f));
 	}
@@ -203,11 +204,12 @@ void BackupManagerDB::insert(const File& file)
 void BackupManagerDB::update(const File& file)
 {
     assert(exists(file));
-    _stmt->execute("UPDATE " + _file_table +
+    _stmt->execute("UPDATE " + _file_table + " SET "
 		   " FileSize=" + std::to_string(file.size) + ", "
 		   "FileModified=" + std::to_string(file.modified) + ", "
 		   "CRC32=" + std::to_string(file.crc) + ", "
 		   "LastChecked=" + std::to_string(file.checked) + " "
-		   "WHERE Path=" + file.path + " AND FileName=" + file.name + ";");
+		   "WHERE Path=" + "\"" + file.path + "\"" + " AND FileName=" + "\"" +
+		   file.name + "\";");
 }
 
