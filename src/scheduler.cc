@@ -19,13 +19,15 @@
 Scheduler::~Scheduler()
 {
     stop();
-    _scheduler_thread.join();
+    if (_thread_running) {
+	_scheduler_thread.join();
+    }
 }
 
 
 void Scheduler::configure(const mode_e& m,
-			  const std::string& first="",
-			  const std::string& second="")
+			  const std::string& first,
+			  const std::string& second)
 {
     switch(m) {
     case ALWAYS_RUN:
@@ -51,46 +53,73 @@ void Scheduler::start()
     _scheduler_thread = std::thread(&Scheduler::main_thread, this);
 }
 
+
+void Scheduler::add(const std::string& name, Schedulable* s)
+{
+    _lock.lock();
+
+    s->init();
+    _s_map.insert(std::make_pair(name, s));
+    
+    _lock.unlock();
+}
+
+
+void Scheduler::remove(const std::string& name)
+{
+    _lock.lock();
+    
+    map_it it = _s_map.find(name);
+
+    if (it != _s_map.end()) {
+	it->second->stop();
+	_s_map.erase(it);
+    }
+    
+    _lock.unlock();
+}
+
+
 void Scheduler::stop()
 {
-    _running = False;
+    _running = false;
+    _lock.lock();
+    
     for (cmap_it it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
-	it->second.stop();
-	int retry = 0;
-	while (it->second.get_state() != STOP && retry < 30) {
-	    sleep(1);
-	    ++retry;
-	}
-	if (it->second.get_state() != STOP) {
-	    // LOG ERROR
-	}
+	it->second->stop();
     }
+
+    _lock.unlock();
 }
 
 
 void Scheduler::main_thread()
 {
+    _thread_running = true;
     while (_running) {
 	state_e s = run_state();
-	for (cmap_it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
-	    if (it->second.get_state != s) {
+	_lock.lock();
+	for (cmap_it it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
+	    if (it->second->get_state() != s) {
 		switch (s) {
 		case RUN:
-		    it->second.run();
+		    it->second->run();
 		    break;
 		case STOP:
-		    it->second.stop();
+		    it->second->stop();
 		    break;
 		case PAUSE:
-		    it->second.pause();
+		    it->second->pause();
 		    break;
 		default:
 		    assert(false);
 		}
 	    }
 	}
-	sleep(10);
+	_lock.unlock();
+	sleep(5);
     }
+    _thread_running = false;
 }
 
 
@@ -102,7 +131,10 @@ state_e Scheduler::run_state() const
     
     switch(_mode) {
     case ALWAYS_RUN:
-	return RUN:
+	return RUN;
+    case RUN_STOP:
+    case RUN_WAIT:
+    case WINDOW:
     default:
 	return STOP;
     }

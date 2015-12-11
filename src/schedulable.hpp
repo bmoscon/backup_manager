@@ -28,7 +28,7 @@ public:
     virtual void stop() = 0;
     virtual state_e get_state() const = 0;
 
-private:
+protected:
     state_e _state;
 };
 

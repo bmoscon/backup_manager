@@ -15,6 +15,8 @@
 
 
 #include <unordered_map>
+#include <thread>
+#include <mutex>
 
 #include "schedulable.hpp"
 
@@ -29,13 +31,13 @@ typedef enum mode_e {
     
 class Scheduler {
 public:
-    Scheduler() _running(false), _mode(ALWAYS_RUN) {};
+    Scheduler() : _running(false), _thread_running(false), _mode(ALWAYS_RUN) {};
     ~Scheduler();
 
     void configure(const mode_e& m, const std::string& first="", const std::string& second="");
     void start();
     void add(const std::string&, Schedulable*);
-    void remove(std::string);
+    void remove(const std::string&);
     void stop();
 
 private:
@@ -43,9 +45,12 @@ private:
     state_e run_state() const;
     
     typedef std::unordered_map<std::string, Schedulable*>::const_iterator cmap_it;
+    typedef std::unordered_map<std::string, Schedulable*>::iterator map_it;
     std::unordered_map<std::string, Schedulable*> _s_map;
     std::thread _scheduler_thread;
+    std::mutex _lock;
     bool _running;
+    bool _thread_running;
     mode_e _mode;
     
 };

@@ -1,4 +1,4 @@
-all: crc32 logger copy file db
+all: crc32 logger copy file db scheduler
 
 crc32:
 	g++ -Wall -o crc32_test crc32_test.cc ../src/crc32.cc ../src/common.cc -std=c++11 -I../src/ -lz
@@ -15,5 +15,8 @@ file:
 db:
 	g++ -Wall -o db_test db_test.cc ../src/crc32.cc ../src/common.cc ../src/file.cc ../src/disk.cc ../src/logger.cc ../src/db.cc -std=c++11 -I../src/ -I/usr/include/mysql -lmysqlclient -lmysqlcppconn
 
+scheduler:
+	g++ -Wall -o scheduler_test scheduler_test.cc ../src/scheduler.cc -std=c++11 -I../src/ -pthread
+
 clean:
-	rm -f crc32_test logger_test copy_test file_test db_test
+	rm -f crc32_test logger_test copy_test file_test db_test scheduler_test
