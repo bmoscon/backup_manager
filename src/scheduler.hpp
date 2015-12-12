@@ -42,7 +42,7 @@ public:
 
 private:
     void main_thread();
-    state_e run_state() const;
+    state_e next_state(const state_e&) const;
     
     typedef std::unordered_map<std::string, Schedulable*>::const_iterator cmap_it;
     typedef std::unordered_map<std::string, Schedulable*>::iterator map_it;

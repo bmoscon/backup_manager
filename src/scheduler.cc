@@ -12,6 +12,7 @@
 
 #include <unistd.h>
 #include <cassert>
+#include <vector>
 
 #include "scheduler.hpp"
 
@@ -96,17 +97,20 @@ void Scheduler::stop()
 void Scheduler::main_thread()
 {
     _thread_running = true;
+    std::vector<std::string> to_remove;
     while (_running) {
-	state_e s = run_state();
 	_lock.lock();
 	for (cmap_it it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
-	    if (it->second->get_state() != s) {
-		switch (s) {
+	    state_e c = it->second->get_state();
+	    state_e n = next_state(c);
+	    if (n != c) {
+		switch (n) {
 		case RUN:
 		    it->second->run();
 		    break;
 		case STOP:
 		    it->second->stop();
+		    to_remove.push_back(it->first);
 		    break;
 		case PAUSE:
 		    it->second->pause();
@@ -117,25 +121,29 @@ void Scheduler::main_thread()
 	    }
 	}
 	_lock.unlock();
+	for (uint32_t i = 0; i < to_remove.size(); ++i) {
+	    remove(to_remove[i]);
+	}
+	to_remove.clear();
 	sleep(5);
     }
     _thread_running = false;
 }
 
 
-state_e Scheduler::run_state() const
+state_e Scheduler::next_state(const state_e& current) const
 {
     if (!_running) {
-	return STOP;
+	return (STOP);
     }
-    
-    switch(_mode) {
-    case ALWAYS_RUN:
-	return RUN;
-    case RUN_STOP:
-    case RUN_WAIT:
-    case WINDOW:
-    default:
-	return STOP;
+
+    if (_mode == ALWAYS_RUN && current != RUN) {
+	return (RUN);
     }
+
+    if (_mode == RUN_STOP && current != RUN) {
+	return (STOP);
+    }
+
+    return (current);
 }
