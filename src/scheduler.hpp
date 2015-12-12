@@ -31,7 +31,7 @@ typedef enum mode_e {
     
 class Scheduler {
 public:
-    Scheduler() : _running(false), _thread_running(false), _mode(ALWAYS_RUN) {};
+    Scheduler() : _running(false), _mode(ALWAYS_RUN) {};
     ~Scheduler();
 
     void configure(const mode_e& m, const std::string& first="", const std::string& second="");
@@ -42,7 +42,10 @@ public:
 
 private:
     void main_thread();
-    state_e next_state(const state_e&) const;
+    state_e next_state(const state_e&);
+    std::string get_time() const;
+    std::pair<int, int> parse_time(const std::string&) const;
+    bool in_window() const;
     
     typedef std::unordered_map<std::string, Schedulable*>::const_iterator cmap_it;
     typedef std::unordered_map<std::string, Schedulable*>::iterator map_it;
@@ -50,8 +53,9 @@ private:
     std::thread _scheduler_thread;
     std::mutex _lock;
     bool _running;
-    bool _thread_running;
     mode_e _mode;
+    std::string _time1;
+    std::string _time2;
     
 };
 

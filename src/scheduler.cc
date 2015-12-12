@@ -20,7 +20,7 @@
 Scheduler::~Scheduler()
 {
     stop();
-    if (_thread_running) {
+    if (_scheduler_thread.joinable()) {
 	_scheduler_thread.join();
     }
 }
@@ -30,13 +30,20 @@ void Scheduler::configure(const mode_e& m,
 			  const std::string& first,
 			  const std::string& second)
 {
+    _mode = m;
     switch(m) {
     case ALWAYS_RUN:
-	_mode = m;
 	break;
     case RUN_WAIT:
+	assert(!first.empty());
+	_time1 = first;
+	break;
     case RUN_STOP:
+	break;
     case WINDOW:
+	assert(!first.empty() && !second.empty());
+	_time1 = first;
+	_time2 = second;
 	break;
     default:
 	assert(false);
@@ -51,6 +58,10 @@ void Scheduler::start()
     }
 
     _running = true;
+    
+    if (_scheduler_thread.joinable()) {
+	_scheduler_thread.join();
+    }
     _scheduler_thread = std::thread(&Scheduler::main_thread, this);
 }
 
@@ -96,7 +107,6 @@ void Scheduler::stop()
 
 void Scheduler::main_thread()
 {
-    _thread_running = true;
     std::vector<std::string> to_remove;
     while (_running) {
 	_lock.lock();
@@ -127,11 +137,10 @@ void Scheduler::main_thread()
 	to_remove.clear();
 	sleep(5);
     }
-    _thread_running = false;
 }
 
 
-state_e Scheduler::next_state(const state_e& current) const
+state_e Scheduler::next_state(const state_e& current)
 {
     if (!_running) {
 	return (STOP);
@@ -144,6 +153,81 @@ state_e Scheduler::next_state(const state_e& current) const
     if (_mode == RUN_STOP && current != RUN) {
 	return (STOP);
     }
+    if (_mode == RUN_WAIT) {
+	if (current == INIT) {
+	    return (RUN);
+	}
+
+	if (current == STOP &&_time2.empty()) {
+	    _time2 = get_time();
+	    return (current);
+	}
+
+	if (current == STOP && !_time2.empty()) {
+	    std::pair<int, int> end, wait, now;
+	    end = parse_time(_time2);
+	    wait = parse_time(_time1);
+	    now = parse_time(get_time());
+	    
+	    if ((now.first - end.first >= wait.first) && (now.second - end.second >= wait.second)) {
+		_time2.clear();
+		return (RUN);
+	    }
+	}
+    }
 
     return (current);
+}
+
+
+std::string Scheduler::get_time() const
+{
+    struct tm *timeinfo;
+    time_t rawtime;
+    char *time_buf;
+    
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    time_buf = asctime(timeinfo);
+    
+    std::string ret(time_buf);
+    if (!ret.empty() && ret[ret.length() - 1] == '\n') {
+	ret.erase(ret.length()-1);
+    }
+    
+    return (ret);
+}
+
+
+std::pair<int, int> Scheduler::parse_time(const std::string& time) const
+{
+    std::pair<int, int> ret;
+    
+    size_t pos = time.find(":");
+    ret.first = std::stoi(time.substr(pos-2, 2));
+    ret.second =  std::stoi(time.substr(pos+1, 2));
+    
+    return (ret);
+}
+
+
+bool Scheduler::in_window() const
+{
+    assert(_mode == WINDOW);
+    std::pair<int, int> time, stop_time, start_time;
+    time = parse_time(get_time());
+    start_time = parse_time(_time1);
+    stop_time = parse_time(_time2);
+    
+    if ((time.first > start_time.first) || 
+	((time.first == start_time.first) && (time.second >= start_time.second))) {
+	return (true);
+    }
+    
+    if ((time.first < stop_time.first) || 
+	((time.first == stop_time.first) && (time.second < stop_time.second))) {
+	return (true);
+    }
+    
+    return (false);
 }
