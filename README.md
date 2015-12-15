@@ -8,7 +8,7 @@ This project is the spiritual successor to another project of mine, [BackupDaemo
 I've been working on this and using it on my own machines for the past 18 months and have gotten it to the point where I'd like to release it. Parts are derived from the old project, BackupDaemon, and other parts are new. I'm cleaning up the code and releasing it as time permits.
 
 
-Requires the following libraries:
+#Requires the following libraries:
 
 libmysqlcppconn-dev
 

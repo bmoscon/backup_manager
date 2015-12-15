@@ -28,7 +28,7 @@ public:
 	}
 	t = std::thread(&Test::worker, this);
     }
-    void pause() { _state = PAUSE; }
+    void shutdown() { _state = SHUTDOWN; }
     void stop() { _state = STOP; }
     state_e get_state() const { return (_state); }
 
@@ -42,8 +42,8 @@ public:
 	case RUN:
 	    std::cout << "RUN";
 	    break;
-	case PAUSE:
-	    std::cout << "PAUSE";
+	case SHUTDOWN:
+	    std::cout << "SHUTDOWN";
 	    break;
 	case STOP:
 	    std::cout << "STOP";

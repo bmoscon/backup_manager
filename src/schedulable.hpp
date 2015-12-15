@@ -16,16 +16,16 @@
 typedef enum state_e {
     INIT = 0,
     RUN,
-    PAUSE,
-    STOP
+    STOP,
+    SHUTDOWN
 } state_e;
 
 class Schedulable {
 public:
     virtual void init() = 0;
     virtual void run() = 0;
-    virtual void pause() = 0;
     virtual void stop() = 0;
+    virtual void shutdown() = 0;
     virtual state_e get_state() const = 0;
 
 protected:

@@ -122,8 +122,9 @@ void Scheduler::main_thread()
 		    it->second->stop();
 		    to_remove.push_back(it->first);
 		    break;
-		case PAUSE:
-		    it->second->pause();
+		case SHUTDOWN:
+		    it->second->shutdown();
+		    to_remove.push_back(it->first);
 		    break;
 		default:
 		    assert(false);
@@ -143,7 +144,7 @@ void Scheduler::main_thread()
 state_e Scheduler::next_state(const state_e& current)
 {
     if (!_running) {
-	return (STOP);
+	return (SHUTDOWN);
     }
 
     if (_mode == ALWAYS_RUN && current != RUN) {
@@ -151,8 +152,9 @@ state_e Scheduler::next_state(const state_e& current)
     }
 
     if (_mode == RUN_STOP && current != RUN) {
-	return (STOP);
+	return (SHUTDOWN);
     }
+
     if (_mode == RUN_WAIT) {
 	if (current == INIT) {
 	    return (RUN);
@@ -176,6 +178,13 @@ state_e Scheduler::next_state(const state_e& current)
 	}
     }
 
+    if (_mode == WINDOW) {
+	if (in_window()) {
+	    return (RUN);
+	}
+	return (STOP);
+    }
+    
     return (current);
 }
 

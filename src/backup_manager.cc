@@ -112,7 +112,7 @@ void BackupManager::run(manager_state_e& state)
 void BackupManager::db_check(const std::vector<Directory>& dirs)
 {
     for (uint32_t i = 0; i < dirs.size(); ++i) {
-	Directory db_dir = _db.get_directory(dirs[i]);
+	Directory db_dir = _db.get(dirs[i]);
     }
 }
 

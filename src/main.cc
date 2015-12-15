@@ -38,7 +38,6 @@ static bool lock_file(int&);
 static void stop_handler(int);
 static void set_state(const manager_state_e);
 static void worker_function(thread_data_st, int);
-static bool in_window(const std::string&, const std::string&);
 
 
 manager_state_e state = RUN;
@@ -181,13 +180,13 @@ int main(int argc, char* argv[])
     // 1. checks to see if we are in the time window; if not, pause work
     // 2. checks config file for config updates
     while (state != STOP) {
-	if (!in_window(start_time, stop_time)) {
+	/*if (!in_window(start_time, stop_time)) {
 	    log << INFO << "Out of time window, setting state to WAIT" << std::endl;
 	    set_state(WAIT);
 	} else {
 	    log << INFO << "In time window, setting state to RUN" << std::endl;
 	    set_state(RUN);
-	}
+	    }*/
 
 	
 	try {
