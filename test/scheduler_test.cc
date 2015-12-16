@@ -11,6 +11,8 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <unordered_set>
+#include <cassert>
 
 #include "scheduler.hpp"
 
@@ -18,7 +20,14 @@
 class Test : public Schedulable {
 public:
     std::thread t;
-    void worker() { sleep(5); _state = STOP; }
+    Test() {}
+    ~Test()
+    {
+	if (t.joinable()) {
+	    t.join();
+	}
+    }
+    void worker() { sleep(1); _state = STOP; }
     void init() { _state = INIT; }
     void run()
     {
@@ -54,21 +63,45 @@ public:
 };
 
 
-int main()
+static bool test_start_stop()
 {
+    std::unordered_set<uint8_t> states;
+    
     Scheduler sch;
     Test *t = new Test();
-    sch.configure(RUN_WAIT, "00:01");
+    sch.configure(RUN_STOP);
     sch.add("TEST", t);
-    t->print_state();
     sch.start();
     sleep(1);
     uint32_t count = 0;
     while (count < 120) {
-	t->print_state();
+	state_e s = t->get_state();
+	if (states.find(s) == states.end()) {
+	    states.insert(s);
+	}
+
+	if (s == SHUTDOWN) {
+	    break;
+	}
+	++count;
 	sleep(1);
     }
 
+    sch.stop();
+    delete t;
 
+    return (states.find(RUN) != states.end() &&
+	    states.find(STOP) != states.end() &&
+	    states.find(SHUTDOWN) != states.end());
+}
+
+
+int main()
+{
+    std::cout << "Testing RUN_STOP scheduler ..." << std::endl;
+    assert(test_start_stop());
+
+
+    std::cout << "**** PASS ****" << std::endl;
     return (0);
 }

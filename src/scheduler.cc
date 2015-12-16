@@ -84,7 +84,6 @@ void Scheduler::remove(const std::string& name)
     map_it it = _s_map.find(name);
 
     if (it != _s_map.end()) {
-	it->second->stop();
 	_s_map.erase(it);
     }
     
@@ -115,6 +114,7 @@ void Scheduler::main_thread()
 	for (cmap_it it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
 	    state_e c = it->second->get_state();
 	    state_e n = next_state(c);
+	    
 	    if (n != c) {
 		switch (n) {
 		case RUN:
@@ -122,7 +122,6 @@ void Scheduler::main_thread()
 		    break;
 		case STOP:
 		    it->second->stop();
-		    to_remove.push_back(it->first);
 		    break;
 		case SHUTDOWN:
 		    it->second->shutdown();
@@ -153,6 +152,9 @@ state_e Scheduler::next_state(const state_e& current)
 	return (RUN);
     }
 
+    if (_mode == RUN_STOP && current == INIT) {
+	return (RUN);
+    }
     if (_mode == RUN_STOP && current != RUN) {
 	return (SHUTDOWN);
     }
