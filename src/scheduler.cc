@@ -98,9 +98,11 @@ void Scheduler::stop()
     _lock.lock();
     
     for (cmap_it it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
-	it->second->stop();
+	it->second->shutdown();
     }
 
+    _s_map.clear();
+    
     _lock.unlock();
 }
 
