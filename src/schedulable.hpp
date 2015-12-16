@@ -13,7 +13,7 @@
 #ifndef __SCHEDULABLE__
 #define __SCHEDULABLE__
 
-typedef enum state_e {
+typedef enum state_e : uint8_t {
     INIT = 0,
     RUN,
     STOP,
@@ -22,6 +22,7 @@ typedef enum state_e {
 
 class Schedulable {
 public:
+    virtual ~Schedulable() {}
     virtual void init() = 0;
     virtual void run() = 0;
     virtual void stop() = 0;
