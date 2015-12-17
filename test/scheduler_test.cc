@@ -96,11 +96,44 @@ static bool test_start_stop()
 }
 
 
+static bool test_start_wait()
+{
+    std::unordered_set<uint8_t> states;
+    
+    Scheduler sch;
+    Test *t = new Test();
+    sch.configure(RUN_WAIT, "00:01");
+    sch.add("TEST", t);
+    sch.start();
+    sleep(1);
+    uint32_t count = 0;
+    while (count < 120) {
+	state_e s = t->get_state();
+	if (states.find(s) == states.end()) {
+	    states.insert(s);
+	}
+	++count;
+	sleep(1);
+    }
+
+    sch.stop();
+    delete t;
+
+    return (states.find(RUN) != states.end() &&
+	    states.find(STOP) != states.end() &&
+	    states.find(SHUTDOWN) == states.end());
+
+}
+
+
 int main()
 {
     std::cout << "Testing RUN_STOP scheduler ..." << std::endl;
     assert(test_start_stop());
 
+    std::cout << "Testing RUN_WAIT scheduler ..." << std::endl;
+    assert(test_start_wait());
+    
 
     std::cout << "**** PASS ****" << std::endl;
     return (0);
