@@ -9,9 +9,6 @@ I've been working on this and using it on my own machines for the past 18 months
 
 
 ###Requires the following libraries:
-
-libmysqlcppconn-dev
-
-mysql-client
-
-libmysql++-dev
+*libmysqlcppconn-dev
+*mysql-client
+*libmysql++-dev
