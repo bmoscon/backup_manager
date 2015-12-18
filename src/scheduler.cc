@@ -32,13 +32,12 @@ void Scheduler::configure(const mode_e& m,
 {
     _mode = m;
     switch(m) {
-    case ALWAYS_RUN:
+    case RUN_ALWAYS:
+    case RUN_STOP:
 	break;
     case RUN_WAIT:
 	assert(!first.empty());
 	_time1 = first;
-	break;
-    case RUN_STOP:
 	break;
     case WINDOW:
 	assert(!first.empty() && !second.empty());
@@ -148,7 +147,7 @@ state_e Scheduler::next_state(const state_e& current)
 	return (SHUTDOWN);
     }
 
-    if (_mode == ALWAYS_RUN && current != RUN) {
+    if (_mode == RUN_ALWAYS && current != RUN) {
 	return (RUN);
     }
 

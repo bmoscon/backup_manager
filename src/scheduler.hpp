@@ -22,7 +22,7 @@
 
 
 typedef enum mode_e {
-    ALWAYS_RUN = 0,
+    RUN_ALWAYS = 0,
     RUN_WAIT,
     RUN_STOP,
     WINDOW
@@ -31,7 +31,7 @@ typedef enum mode_e {
     
 class Scheduler {
 public:
-    Scheduler() : _running(false), _mode(ALWAYS_RUN) {};
+    Scheduler() : _running(false), _mode(RUN_ALWAYS) {};
     ~Scheduler();
 
     void configure(const mode_e& m, const std::string& first="", const std::string& second="");
