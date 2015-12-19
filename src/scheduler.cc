@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <cassert>
 #include <vector>
+#include <iostream>
 
 #include "scheduler.hpp"
 
@@ -230,16 +231,12 @@ bool Scheduler::in_window() const
     time = parse_time(get_time());
     start_time = parse_time(_time1);
     stop_time = parse_time(_time2);
+
+    std::cout << "IN WINDOW " << _time1 << " " << _time2 << " " << get_time() << std::endl;
+    std::cout << start_time.first << " " << start_time.second << std::endl;
+    std::cout << stop_time.first << " " << stop_time.second << std::endl;
+    std::cout << time.first << " " << time.second << std::endl;
     
-    if ((time.first > start_time.first) || 
-	((time.first == start_time.first) && (time.second >= start_time.second))) {
-	return (true);
-    }
-    
-    if ((time.first < stop_time.first) || 
-	((time.first == stop_time.first) && (time.second < stop_time.second))) {
-	return (true);
-    }
-    
-    return (false);
+    return (time.first >= start_time.first && time.first <= stop_time.first &&
+	    time.second >= start_time.second && time.second <= stop_time.second);
 }

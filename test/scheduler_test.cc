@@ -156,8 +156,59 @@ bool test_run_always()
 }
 
 
+static std::string get_time(int plus_mins)
+{
+    struct tm *timeinfo;
+    time_t rawtime;
+    char *time_buf;
+    
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    timeinfo->tm_min += plus_mins;
+    time_buf = asctime(timeinfo);
+    
+    std::string ret(time_buf);
+    if (!ret.empty() && ret[ret.length() - 1] == '\n') {
+	ret.erase(ret.length()-1);
+    }
+    
+    return (ret);
+}
+
+static bool test_run_window()
+{
+    std::unordered_set<uint8_t> states;
+    
+    Scheduler sch;
+    Test *t = new Test();
+    sch.configure(WINDOW, get_time(1), get_time(2));
+    sch.add("TEST", t);
+    sch.start();
+    sleep(1);
+    uint32_t count = 0;
+    while (count < 240) {
+	state_e s = t->get_state();
+	t->print_state();
+	if (states.find(s) == states.end()) {
+	    states.insert(s);
+	}
+	++count;
+	sleep(1);
+    }
+
+    sch.stop();
+    delete t;
+
+    return (states.find(RUN) != states.end() &&
+	    states.find(STOP) != states.end() &&
+	    states.find(SHUTDOWN) == states.end()); 
+    
+}
+
+
 int main()
 {
+    std::cout << "These tests will take several minutes (5+) to run" << std::endl;
     std::cout << "Testing RUN_STOP scheduler ..." << std::endl;
     assert(test_start_stop());
 
@@ -166,6 +217,9 @@ int main()
 
     std::cout << "Testing RUN_ALWAYS scheduler ..." << std::endl;
     assert(test_run_always());
+
+    std::cout << "Testing RUN_WINDOW scheduler ..." << std::endl;
+    assert(test_run_window());
     
 
     std::cout << "**** PASS ****" << std::endl;
