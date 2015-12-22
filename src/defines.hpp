@@ -1,6 +1,6 @@
 /* Backup Manager Defines
  * 
- * Copyright (c) 2012-2014 Bryant Moscon - bmoscon@gmail.com
+ * Copyright (c) 2012-2015 Bryant Moscon - bmoscon@gmail.com
  * 
  * Please see the LICENSE file for the terms and conditions 
  * associated with this software.
@@ -27,14 +27,6 @@ struct thread_data_st {
     uint64_t interval;
     std::vector<std::string> disks;
 };
-
-
-enum manager_state_e {
-    RUN = 0,
-    WAIT,
-    STOP
-};
-
 
 
 #endif

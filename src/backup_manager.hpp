@@ -15,32 +15,31 @@
 
 #include <vector>
 #include <string>
-#include <unordered_map>
+#include <thread>
 
-#include "defines.hpp"
+#include "schedulable.hpp"
 #include "logger.hpp"
-#include "disk.hpp"
 #include "db.hpp"
 
 
-class BackupManager {
+class BackupManager : public Schedulable {
 public:
-    BackupManager(const std::vector<std::string>&, const std::string&, const logger_level,
-		  const uint64_t&, const std::string&, const std::string&, const std::string&);
-
-    void run(manager_state_e& state);
+    BackupManager(const std::string&);
+    ~BackupManager() { _state = SHUTDOWN; if (_main_thread.joinable()) _main_thread.join(); }
+    
+    void init();
+    void run();
+    void stop();
+    void shutdown();
+    state_e get_state() const;
 
 private:
-    void dir_check(const std::vector<Directory>&);
-    void db_check(const std::vector<Directory>&);
-    void db_prune();
-
-    std::vector<std::string> _disks;
-    std::vector<std::unordered_map<std::string, Directory> > _reconcile;
-    Logger _log;
-    uint64_t _interval;
-    BackupManagerDB _db;
+    void worker();
     
+    std::thread _main_thread;
+    std::vector<std::string> _disks;
+    Logger _log;
+    BackupManagerDB _db;
 };
 
 #endif
