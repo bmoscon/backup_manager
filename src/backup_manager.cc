@@ -9,7 +9,7 @@
  * 09/21/2014 - Initial open source release
  * 09/28/2014 - Handle missing files
  * 10/05/2014 - Initial DB integration
- *
+ * 12/22/2015 - New design
  */
 
 #include <algorithm>
@@ -25,27 +25,27 @@
 BackupManager::BackupManager(const std::string& cfg) 
 {
     try {
-	ConfigParse config(argv[2]);
+	ConfigParse config(cfg);
 
-	_log(config.getValue("Settings", "log_path"));
+	_log = new Logger(config.getValue("Settings", "log_path"));
 	std::string level = config.getValue("Settings", "log_level");
 	std::string ip = config.getValue("Settings", "db_ip");
 	std::string pass = config.getValue("Settings", "db_pass");
 	std::string user = config.getValue("Settings", "db_user");
 	
 	if (level.compare("DEBUG") == 0) {
-	    _log.set_level(DEBUG);
+	    _log->set_level(DEBUG);
 	} else if (level.compare("INFO") == 0) {
-	    _log.set_level(INFO);
+	    _log->set_level(INFO);
 	} else if (level.compare("WARNING") == 0) {
-	    _log.set_level(WARNING);
+	    _log->set_level(WARNING);
 	} else if (level.compare("ERROR") == 0) {
-	    _log.set_level(ERROR);
+	    _log->set_level(ERROR);
 	} else {
-	    _log.set_level(INFO);
+	    _log->set_level(INFO);
 	}
 
-	_db(db_ip, user, pass, &_log);
+	_db = new BackupManagerDB(ip, user, pass, _log);
 	
 	ConfigParse::const_iterator it = config.begin("Dirs");
 	    
@@ -87,6 +87,11 @@ void BackupManager::shutdown()
     _state = SHUTDOWN;
 }
 
+
+state_e BackupManager::get_state() const
+{
+    return (_state);
+}
 
 void BackupManager::worker()
 {

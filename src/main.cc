@@ -9,6 +9,7 @@
  * 09/20/2014 - Initial open source release
  * 09/26/2014 - Logger Support in config file
  *            - Add logging in main
+ * 12/22/2015 - New design changes
  */
 
 #include <iostream>
@@ -23,9 +24,7 @@
 #include <signal.h>
 #include <fcntl.h>
 
-#include "config_parse.hpp"
-#include "defines.hpp"
-#include "logger.hpp"
+#include "scheduler.hpp"
 #include "backup_manager.hpp"
 
 
@@ -36,13 +35,8 @@ static void usage();
 static void send_stop();
 static bool lock_file(int&);
 static void stop_handler(int);
-static void set_state(const manager_state_e);
-static void worker_function(thread_data_st, int);
 
-
-manager_state_e state = RUN;
-std::mutex lock;
-std::string log_path;
+bool running = true;
 
 
 int main(int argc, char* argv[])
@@ -96,121 +90,22 @@ int main(int argc, char* argv[])
 	exit(EXIT_FAILURE);
     }
     
-   
-    
-
-    // main program loop
-    // 1. load config
-    // 2. start a thread per set of mirrored disks
-    // 3. periodically check if we are in our run window, if not, set state to 
-    //    waiting. 
-    // 4. if state changes to stop, wait for threads to finish and exit
-    
-    std::vector<thread_data_st> thread_work;
-    std::string start_time;
-    std::string stop_time;
-    logger_level log_level;
-
-    std::string db_ip, db_pass, db_user;
-    
-    try {
-	ConfigParse config(argv[2]);
-	
-	int num_sets = std::stoi(config.getValue("Settings", "stores"));
-	start_time = config.getValue("Settings", "start_time");
-	stop_time = config.getValue("Settings", "stop_time");
-	log_path = config.getValue("Settings", "log_path");
-	std::string level = config.getValue("Settings", "log_level");
-	uint64_t interval = std::stoll(config.getValue("Settings", "completion_interval"));
-	db_ip = config.getValue("Settings", "db_ip");
-	db_pass = config.getValue("Settings", "db_pass");
-	db_user = config.getValue("Settings", "db_user");
-	
-	
-	if (level.compare("DEBUG") == 0) {
-	    log_level = DEBUG;
-	} else if (level.compare("INFO") == 0) {
-	    log_level = INFO;
-	} else if (level.compare("WARNING") == 0) {
-	    log_level = WARNING;
-	} else if (level.compare("ERROR") == 0) {
-	    log_level = ERROR;
-	} else {
-	    log_level = INFO;
-	}
-	
-	for (int i = 0; i < num_sets; ++i) {
-	    std::string store_name = "Store " + std::to_string(i + 1);
-	    ConfigParse::const_iterator it = config.begin(store_name);
-	    std::vector<std::string> disk_list;
-	    
-	    for (; it != config.end(store_name); ++it) {
-		disk_list.push_back(it->second);
-	    }
-	    
-	    thread_data_st data;
-	    data.disks = disk_list;
-	    data.log_level = log_level;
-	    data.interval = interval;
-	    data.db_user = db_user;
-	    data.db_pass = db_pass;
-	    data.db_ip = db_ip;
-	    thread_work.push_back(data);
-	}
-	    
-    } catch (ConfigParseEx& e) {
-	std::cerr << e.what() << std::endl;
-	exit(EXIT_FAILURE);
-    } 
-    Logger log(log_path + "/backup_manager.main");
-    log << INFO << "Config parsed, starting " << thread_work.size() << " worker threads" 
-	<< std::endl;
-
-    std::vector<std::thread> workers;
-    for (uint32_t i = 0; i < thread_work.size(); ++i) {
-	workers.push_back(std::thread(worker_function, thread_work[i], i));
-    }
-    
     // all output via logging now
-    //close(STDIN_FILENO);
-    //close(STDOUT_FILENO);
-    //close(STDERR_FILENO);
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
 
-    // the main thread loop does the following:
-    // 1. checks to see if we are in the time window; if not, pause work
-    // 2. checks config file for config updates
-    while (state != STOP) {
-	/*if (!in_window(start_time, stop_time)) {
-	    log << INFO << "Out of time window, setting state to WAIT" << std::endl;
-	    set_state(WAIT);
-	} else {
-	    log << INFO << "In time window, setting state to RUN" << std::endl;
-	    set_state(RUN);
-	    }*/
-
-	
-	try {
-	    ConfigParse config(argv[2]);
-	    
-	    start_time = config.getValue("Settings", "start_time");
-	    stop_time = config.getValue("Settings", "stop_time");
-	} catch (ConfigParseEx& e) {
-	    // nothing to do here. we still have the old values for start/stop time
-	    // maybe the user will have fixed the config file the next time around
-	    log << WARNING << "Config parse failed with error " << e.what() << std::endl;
-	} 
-	
+    Scheduler s;
+    s.configure(RUN_WAIT, "01:00");
+    s.add("BackupManager", new BackupManager("config.ini"));
+    s.start();
+    while (running) {	
 	sleep(30);
     }
 
-    log << INFO << "Exiting main run loop, waiting for worker threads to exit" << std::endl;
-    
-    for (uint32_t i = 0; i < workers.size(); ++i) {
-	workers[i].join();
-    }
+    s.stop();
 
-    log << INFO << "Workers all exited, cleaning up and shutting down" << std::endl;
-    
+   
     // We shouldnt make it here until manager stops, 
     // which wont happen unless we get a SIGTERM.
     // Unlock the pid file and remove it
@@ -258,7 +153,7 @@ static void send_stop()
 
 static void stop_handler(int signo)
 {
-    set_state(STOP);
+    running = false;
 }
 
 
@@ -295,27 +190,4 @@ static bool lock_file(int& fd)
     }
     
     return (true);
-}
-
-
-static void set_state(const manager_state_e s)
-{
-    lock.lock();
-    // once we've been stopped we do not want to overwrite that state
-    if (state != STOP) {
-	state = s;
-    }
-    lock.unlock();
-    
-}
-
- static void worker_function(thread_data_st data, int id)
-{
-    std::string log = log_path + "/backup_manager." + std::to_string(id);
-    BackupManager b(data.disks, log, data.log_level, data.interval, data.db_user, 
-		    data.db_pass, data.db_ip);
-    
-    // each thread shares the state with the main thread
-    // and will exit or pause as appropriate
-    b.run(state);
 }

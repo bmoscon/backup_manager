@@ -7,7 +7,7 @@
  *
  *
  * 09/21/2014 - Initial open source release
- *
+ * 12/22/2015 - New design
  */
 
 #ifndef __BACKUP_MANAGER__
@@ -38,8 +38,8 @@ private:
     
     std::thread _main_thread;
     std::vector<std::string> _disks;
-    Logger _log;
-    BackupManagerDB _db;
+    Logger *_log;
+    BackupManagerDB *_db;
 };
 
 #endif

@@ -1,5 +1,5 @@
 CC = g++
-CCFLAGS = -Wall -Werror -std=c++11 -ggdb3 -I/usr/include/mysql
+CCFLAGS = -Wall -Werror -std=c++14 -ggdb3 -I/usr/include/mysql
 
 HEADERS = $(wildcard *.hpp)
 SRC     = $(wildcard *.cc)
