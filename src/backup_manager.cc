@@ -26,11 +26,11 @@ BackupManager::BackupManager(const std::string& cfg)
     try {
 	ConfigParse config(cfg);
 
-	_log = new Logger(config.getValue("Settings", "log_path"));
-	std::string level = config.getValue("Settings", "log_level");
-	std::string ip = config.getValue("Settings", "db_ip");
-	std::string pass = config.getValue("Settings", "db_pass");
-	std::string user = config.getValue("Settings", "db_user");
+	_log = new Logger(config.get_value("Settings", "log_path"));
+	std::string level = config.get_value("Settings", "log_level");
+	std::string ip = config.get_value("Settings", "db_ip");
+	std::string pass = config.get_value("Settings", "db_pass");
+	std::string user = config.get_value("Settings", "db_user");
 	
 	if (level.compare("DEBUG") == 0) {
 	    _log->set_level(DEBUG);

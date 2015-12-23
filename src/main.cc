@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 
     ConfigParse config(argv[2]);
     mode_e m;
-    std::string mode = config.getValue("Settings", "mode");
+    std::string mode = config.get_value("Settings", "mode");
     std::string time1, time2;
     if (!mode.compare("RUN_STOP")) {
 	m = RUN_STOP;
@@ -102,11 +102,11 @@ int main(int argc, char* argv[])
 	m = RUN_ALWAYS;
     } else if (!mode.compare("RUN_WAIT")) {
 	m = RUN_WAIT;
-	time1 = config.getValue("Settings", "wait_time");
+	time1 = config.get_value("Settings", "wait_time");
     } else if (!mode.compare("WINDOW")) {
 	m = WINDOW;
-	time1 = config.getValue("Settings", "start_time");
-	time2 = config.getValue("Settings", "stop_time");
+	time1 = config.get_value("Settings", "start_time");
+	time2 = config.get_value("Settings", "stop_time");
     } else {
 	std::cerr << "Invalid mode specified in config. Exiting" << std::endl;
 	exit(EXIT_FAILURE);

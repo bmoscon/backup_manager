@@ -4,8 +4,9 @@
  *
  * Config Parse Header File
  *
- * Copyright (C) 2013-2014  Bryant Moscon - bmoscon@gmail.com
  *
+ * Copyright (C) 2013-2015  Bryant Moscon - bmoscon@gmail.com
+ * 
  * Please see the LICENSE file for the terms and conditions 
  * associated with this software.
  *
@@ -24,37 +25,36 @@ class ConfigParse {
 typedef std::unordered_map<std::string, std::string> section;
 
 public:
-    ConfigParse(const char *file);
-    ConfigParse(const std::string &file);
-    
+  ConfigParse(const char *file);
+  ConfigParse(const std::string &file);
+  
 
-    typedef section::iterator iterator;
-    typedef section::const_iterator const_iterator;
-    
-    iterator begin(const std::string &section);
-    iterator end(const std::string &section);
-    std::string getValue(const std::string &section, const std::string &name);
-    std::vector<std::string> getSections() const;
-    
+  typedef section::const_iterator const_iterator;
+  
+  const_iterator begin(const std::string &section) const;
+  const_iterator end(const std::string &section) const;
+  std::string get_value(const std::string &section, const std::string &name) const;
+  std::vector<std::string> get_sections() const;
+
 private:
-    void parse(const char *file);
-    
-    std::unordered_map<std::string, section> config;
+  void parse(const char *file);
+  
+  std::unordered_map<std::string, section> config;
 };
 
 
 class ConfigParseEx : public std::exception {
 public:
   
-    ConfigParseEx(const char* m);
-    ConfigParseEx(const std::string& m);
-    ConfigParseEx(const char* m, const unsigned int l);
-    ConfigParseEx(const std::string& m, const unsigned int l);
-    
-    
-    virtual const char* what() const throw();
-    
-    std::string msg;
+  ConfigParseEx(const char* m);
+  ConfigParseEx(const std::string& m);
+  ConfigParseEx(const char* m, const unsigned int l);
+  ConfigParseEx(const std::string& m, const unsigned int l);
+
+  
+  virtual const char* what() const throw();
+  
+  std::string msg;
 };
 
 #endif
