@@ -21,7 +21,6 @@
 #include "common.hpp"
 
 
-
 BackupManager::BackupManager(const std::string& cfg) 
 {
     try {
@@ -57,6 +56,18 @@ BackupManager::BackupManager(const std::string& cfg)
 	std::cerr << e.what() << std::endl;
 	exit(EXIT_FAILURE);
     }
+}
+
+
+BackupManager::~BackupManager()
+{
+    _state = SHUTDOWN;
+    if (_main_thread.joinable()) {
+	_main_thread.join();
+    }
+
+    delete _db;
+    delete _log;
 }
 
 

@@ -25,7 +25,7 @@
 class BackupManager : public Schedulable {
 public:
     BackupManager(const std::string&);
-    ~BackupManager() { _state = SHUTDOWN; if (_main_thread.joinable()) _main_thread.join(); }
+    ~BackupManager();
     
     void init();
     void run();

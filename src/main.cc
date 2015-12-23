@@ -26,7 +26,7 @@
 
 #include "scheduler.hpp"
 #include "backup_manager.hpp"
-
+#include "config_parse.hpp"
 
 #define LOCK_FILE "/var/run/backup_manager.pid"
 
@@ -90,15 +90,39 @@ int main(int argc, char* argv[])
 	exit(EXIT_FAILURE);
     }
     
+   
+
+    ConfigParse config(argv[2]);
+    mode_e m;
+    std::string mode = config.getValue("Settings", "mode");
+    std::string time1, time2;
+    if (!mode.compare("RUN_STOP")) {
+	m = RUN_STOP;
+    } else if (!mode.compare("RUN_ALWAYS")) {
+	m = RUN_ALWAYS;
+    } else if (!mode.compare("RUN_WAIT")) {
+	m = RUN_WAIT;
+	time1 = config.getValue("Settings", "wait_time");
+    } else if (!mode.compare("WINDOW")) {
+	m = WINDOW;
+	time1 = config.getValue("Settings", "start_time");
+	time2 = config.getValue("Settings", "stop_time");
+    } else {
+	std::cerr << "Invalid mode specified in config. Exiting" << std::endl;
+	exit(EXIT_FAILURE);
+    }
+    
+    
+    Scheduler s;
+    s.configure(m, time1, time2);
+    s.add("BackupManager", new BackupManager(argv[2]));
+    s.start();
+
     // all output via logging now
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
-
-    Scheduler s;
-    s.configure(RUN_WAIT, "01:00");
-    s.add("BackupManager", new BackupManager("config.ini"));
-    s.start();
+    
     while (running) {	
 	sleep(30);
     }
