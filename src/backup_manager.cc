@@ -49,7 +49,7 @@ BackupManager::BackupManager(const std::string& cfg)
 	ConfigParse::const_iterator it = config.begin("Dirs");
 	    
 	for (; it != config.end("Dirs"); ++it) {
-	    _disks.push_back(it->second);
+	    _disk_names.push_back(it->second);
 	}
 	    
     } catch (ConfigParseEx& e) {
@@ -61,10 +61,14 @@ BackupManager::BackupManager(const std::string& cfg)
 
 BackupManager::~BackupManager()
 {
+    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+
     _state = SHUTDOWN;
     if (_main_thread.joinable()) {
 	_main_thread.join();
     }
+
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 
     delete _db;
     delete _log;
@@ -73,6 +77,8 @@ BackupManager::~BackupManager()
 
 void BackupManager::init()
 {
+   *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+   
     if (_main_thread.joinable()) {
 	_main_thread.join();
     }
@@ -80,6 +86,8 @@ void BackupManager::init()
     _state = INIT;
 
     _main_thread = std::thread(&BackupManager::worker, this);
+
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }
 
 void BackupManager::run()
@@ -106,10 +114,16 @@ state_e BackupManager::get_state() const
 
 void BackupManager::worker()
 {
+    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+    
     while (_state != SHUTDOWN) {
 	switch (_state) {
 	case INIT:
+	    setup_disks();
+	    break;
 	case RUN:
+	    check_dir();
+	    break;
 	case STOP:
 	case SHUTDOWN:
 	    break;
@@ -118,4 +132,27 @@ void BackupManager::worker()
 	}
 	sleep(1);
     }
+
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
+}
+
+
+void BackupManager::setup_disks()
+{
+    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+
+    for (uint32_t i = 0; i < _disk_names.size(); ++i) {
+	_disks.push_back(Disk(_disk_names[i], _log));
+    }
+    
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
+}
+
+
+void BackupManager::check_dir()
+{
+    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+
+    
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }

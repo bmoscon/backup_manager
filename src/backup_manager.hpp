@@ -20,6 +20,7 @@
 #include "schedulable.hpp"
 #include "logger.hpp"
 #include "db.hpp"
+#include "disk.hpp"
 
 
 class BackupManager : public Schedulable {
@@ -35,9 +36,12 @@ public:
 
 private:
     void worker();
+    void setup_disks();
+    void check_dir();
     
     std::thread _main_thread;
-    std::vector<std::string> _disks;
+    std::vector<std::string> _disk_names;
+    std::vector<Disk> _disks;
     Logger *_log;
     BackupManagerDB *_db;
 };
