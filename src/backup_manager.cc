@@ -56,6 +56,8 @@ BackupManager::BackupManager(const std::string& cfg)
 	std::cerr << e.what() << std::endl;
 	exit(EXIT_FAILURE);
     }
+
+    _main_thread = std::thread(&BackupManager::worker, this);
 }
 
 
@@ -63,7 +65,8 @@ BackupManager::~BackupManager()
 {
     *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
 
-    _state = SHUTDOWN;
+    set_state(SHUTDOWN);
+    
     if (_main_thread.joinable()) {
 	_main_thread.join();
     }
@@ -79,38 +82,41 @@ void BackupManager::init()
 {
    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
    
-    if (_main_thread.joinable()) {
-	_main_thread.join();
-    }
-
-    _state = INIT;
-
-    _main_thread = std::thread(&BackupManager::worker, this);
+    set_state(INIT);
 
     *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }
 
+
 void BackupManager::run()
 {
-    _state = RUN;
+    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+    
+    set_state(RUN);
+    
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }
 
-void BackupManager::stop()
+
+void BackupManager::wait()
 {
-    _state = STOP;
+    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+    
+    set_state(WAIT);
+    
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }
 
 
 void BackupManager::shutdown()
 {
-    _state = SHUTDOWN;
+    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+    
+    set_state(SHUTDOWN);
+    
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }
 
-
-state_e BackupManager::get_state() const
-{
-    return (_state);
-}
 
 void BackupManager::worker()
 {
@@ -123,13 +129,18 @@ void BackupManager::worker()
 	case INIT:
 	    setup_disks();
 	    current_dir = next_dir();
+	    wait();
 	    break;
 	case RUN:
 	    check_dir(current_dir);
 	    current_dir = next_dir();
+	    if (current_dir.empty()) {
+		wait();
+	    }
 	    break;
-	case STOP:
 	case SHUTDOWN:
+	case NONE:
+	case WAIT:
 	    break;
 	default:
 	    assert(false);
@@ -165,9 +176,7 @@ Directory BackupManager::next_dir()
 
     Directory ret;
     
-    if (!_disks.size()) {
-	_state = STOP;
-    } else {
+    if (_disks.size()) {
 	ret = _disks[0].next_directory();
 	if (ret.empty()) {
 	    _disks.erase(_disks.begin());
@@ -184,19 +193,12 @@ Directory BackupManager::next_dir()
 void BackupManager::check_dir(Directory& d)
 {
     *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
-
-    // this case should only happen if we are in a state like
-    // RUN_ALWAYS or WINDOW or RUN_WAIT
     if (d.empty()) {
-	setup_disks();
-	d = next_dir();
-	if (d.empty()) {
-	    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
-	    return;
-	}
+	*_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
+	return;
     }
 
-    
+    *_log << "Dir is: \n"  << d << std::endl << std::endl;
     
     
     *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;

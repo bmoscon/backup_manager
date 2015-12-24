@@ -42,7 +42,7 @@ public:
 
 private:
     void main_thread();
-    state_e next_state(const state_e&);
+    state_e next_state(const state_e&, const state_e&);
     std::string get_time() const;
     std::pair<int, int> parse_time(const std::string&) const;
     bool in_window() const;

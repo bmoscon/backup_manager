@@ -27,19 +27,18 @@ public:
 	    t.join();
 	}
     }
-    void worker() { sleep(1); _state = STOP; }
-    void init() { _state = INIT; }
+    void worker() { sleep(1); wait(); }
+    void init() { _state = INIT; wait(); }
+    void wait() { set_state(WAIT); }
     void run()
     {
-	_state = RUN;
+	set_state(RUN);
 	if (t.joinable()) {
 	    t.join();
 	}
 	t = std::thread(&Test::worker, this);
     }
     void shutdown() { _state = SHUTDOWN; }
-    void stop() { _state = STOP; }
-    state_e get_state() const { return (_state); }
 
     void print_state()
     {
@@ -54,8 +53,10 @@ public:
 	case SHUTDOWN:
 	    std::cout << "SHUTDOWN";
 	    break;
-	case STOP:
-	    std::cout << "STOP";
+	case WAIT:
+	    std::cout << "WAIT";
+	    break;
+	default:
 	    break;
 	}
 	std::cout << std::endl;
@@ -75,7 +76,12 @@ static bool test_start_stop()
     sleep(1);
     uint32_t count = 0;
     while (count < 120) {
-	state_e s = t->get_state();
+	state_e s;
+	if (t) {
+	    s = t->get_state();
+	} else {
+	    s = SHUTDOWN;
+	}
 	if (states.find(s) == states.end()) {
 	    states.insert(s);
 	}
@@ -88,10 +94,9 @@ static bool test_start_stop()
     }
 
     sch.stop();
-    delete t;
 
     return (states.find(RUN) != states.end() &&
-	    states.find(STOP) != states.end() &&
+	    states.find(WAIT) != states.end() &&
 	    states.find(SHUTDOWN) != states.end());
 }
 
@@ -117,10 +122,9 @@ static bool test_start_wait()
     }
 
     sch.stop();
-    delete t;
 
     return (states.find(RUN) != states.end() &&
-	    states.find(STOP) != states.end() &&
+	    states.find(WAIT) != states.end() &&
 	    states.find(SHUTDOWN) == states.end());
 
 }
@@ -147,10 +151,9 @@ bool test_run_always()
     }
 
     sch.stop();
-    delete t;
 
     return (states.find(RUN) != states.end() &&
-	    states.find(STOP) != states.end() &&
+	    states.find(WAIT) != states.end() &&
 	    states.find(SHUTDOWN) == states.end()); 
     
 }
@@ -197,10 +200,9 @@ static bool test_run_window()
     }
 
     sch.stop();
-    delete t;
 
     return (states.find(RUN) != states.end() &&
-	    states.find(STOP) != states.end() &&
+	    states.find(WAIT) != states.end() &&
 	    states.find(SHUTDOWN) == states.end()); 
     
 }

@@ -30,9 +30,8 @@ public:
     
     void init();
     void run();
-    void stop();
+    void wait();
     void shutdown();
-    state_e get_state() const;
 
 private:
     void worker();

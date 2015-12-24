@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include <cassert>
 #include <vector>
-#include <iostream>
 
 #include "scheduler.hpp"
 
@@ -23,6 +22,11 @@ Scheduler::~Scheduler()
     stop();
     if (_scheduler_thread.joinable()) {
 	_scheduler_thread.join();
+    }
+
+    for (map_it it = _s_map.begin(); it != _s_map.end(); ++it) {
+	delete it->second;
+	it->second = NULL;
     }
 }
 
@@ -84,6 +88,8 @@ void Scheduler::remove(const std::string& name)
     map_it it = _s_map.find(name);
 
     if (it != _s_map.end()) {
+	delete it->second;
+	it->second = NULL;
 	_s_map.erase(it);
     }
     
@@ -99,8 +105,6 @@ void Scheduler::stop()
     for (cmap_it it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
 	it->second->shutdown();
     }
-
-    _s_map.clear();
     
     _lock.unlock();
 }
@@ -112,16 +116,19 @@ void Scheduler::main_thread()
     while (_running) {
 	_lock.lock();
 	for (cmap_it it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
+	    it->second->state_lock();
+	    
 	    state_e c = it->second->get_state();
-	    state_e n = next_state(c);
+	    state_e p = it->second->get_prev_state();
+	    state_e n = next_state(c, p);
 	    
 	    if (n != c) {
 		switch (n) {
 		case RUN:
 		    it->second->run();
 		    break;
-		case STOP:
-		    it->second->stop();
+		case WAIT:
+		    it->second->wait();
 		    break;
 		case SHUTDOWN:
 		    it->second->shutdown();
@@ -131,6 +138,7 @@ void Scheduler::main_thread()
 		    assert(false);
 		}
 	    }
+	    it->second->state_unlock();
 	}
 	_lock.unlock();
 	for (uint32_t i = 0; i < to_remove.size(); ++i) {
@@ -142,34 +150,41 @@ void Scheduler::main_thread()
 }
 
 
-state_e Scheduler::next_state(const state_e& current)
+state_e Scheduler::next_state(const state_e& current, const state_e& prev)
 {
-    if (!_running) {
+    if (!_running || current == SHUTDOWN) {
 	return (SHUTDOWN);
     }
 
-    if (_mode == RUN_ALWAYS && current != RUN) {
-	return (RUN);
-    }
-
-    if (_mode == RUN_STOP && current == INIT) {
-	return (RUN);
-    }
-    if (_mode == RUN_STOP && current != RUN) {
-	return (SHUTDOWN);
-    }
-
-    if (_mode == RUN_WAIT) {
-	if (current == INIT) {
+    switch (_mode) {
+    case RUN_ALWAYS:
+	if (current == WAIT && prev == RUN) {
+	    return (INIT);
+	}
+    
+	if (current == WAIT && prev == INIT) {
+	    return (RUN);
+	}
+	break;
+    case RUN_STOP:
+	if (prev == INIT && current == WAIT) {
+	    return (RUN);
+	}
+	if (current == WAIT && prev == RUN) {
+	    return (SHUTDOWN);
+	}
+	break;
+    case RUN_WAIT:
+	if (current == WAIT && prev == INIT) {
 	    return (RUN);
 	}
 
-	if (current == STOP &&_time2.empty()) {
+	if (current == WAIT && _time2.empty()) {
 	    _time2 = get_time();
 	    return (current);
 	}
 
-	if (current == STOP && !_time2.empty()) {
+	if (current == WAIT && !_time2.empty()) {
 	    std::pair<int, int> end, wait, now;
 	    end = parse_time(_time2);
 	    wait = parse_time(_time1);
@@ -177,16 +192,22 @@ state_e Scheduler::next_state(const state_e& current)
 	    
 	    if ((now.first - end.first >= wait.first) && (now.second - end.second >= wait.second)) {
 		_time2.clear();
-		return (RUN);
+		return (INIT);
 	    }
 	}
-    }
+	break;
+    case WINDOW:
+	if (!in_window()) {
+	    return (WAIT);
+	}
 
-    if (_mode == WINDOW) {
-	if (in_window()) {
+	if (current == WAIT && prev == INIT) {
 	    return (RUN);
 	}
-	return (STOP);
+
+	if (current == WAIT && prev == RUN) {
+	    return (INIT);
+	}
     }
     
     return (current);
@@ -231,11 +252,6 @@ bool Scheduler::in_window() const
     time = parse_time(get_time());
     start_time = parse_time(_time1);
     stop_time = parse_time(_time2);
-
-    std::cout << "IN WINDOW " << _time1 << " " << _time2 << " " << get_time() << std::endl;
-    std::cout << start_time.first << " " << start_time.second << std::endl;
-    std::cout << stop_time.first << " " << stop_time.second << std::endl;
-    std::cout << time.first << " " << time.second << std::endl;
     
     return (time.first >= start_time.first && time.first <= stop_time.first &&
 	    time.second >= start_time.second && time.second <= stop_time.second);
