@@ -116,13 +116,17 @@ void BackupManager::worker()
 {
     *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
     
+    Directory current_dir;
+    
     while (_state != SHUTDOWN) {
 	switch (_state) {
 	case INIT:
 	    setup_disks();
+	    current_dir = next_dir();
 	    break;
 	case RUN:
-	    check_dir();
+	    check_dir(current_dir);
+	    current_dir = next_dir();
 	    break;
 	case STOP:
 	case SHUTDOWN:
@@ -141,18 +145,59 @@ void BackupManager::setup_disks()
 {
     *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
 
+    _disks.clear();
+    
     for (uint32_t i = 0; i < _disk_names.size(); ++i) {
 	_disks.push_back(Disk(_disk_names[i], _log));
     }
-    
+
     *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }
 
 
-void BackupManager::check_dir()
+/* This method is responsible for returning the next valid directory
+ * to check in the current mountpoint. If there are no more directories 
+ * we should set the state to STOP to indicate we are done. 
+ */
+Directory BackupManager::next_dir()
 {
     *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
 
+    Directory ret;
+    
+    if (!_disks.size()) {
+	_state = STOP;
+    } else {
+	ret = _disks[0].next_directory();
+	if (ret.empty()) {
+	    _disks.erase(_disks.begin());
+	    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
+	    return next_dir();
+	}
+    }
+    
+    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
+    return (ret);
+}
+
+
+void BackupManager::check_dir(Directory& d)
+{
+    *_log << DEBUG << "Entering " << __PRETTY_FUNCTION__ << std::endl;
+
+    // this case should only happen if we are in a state like
+    // RUN_ALWAYS or WINDOW or RUN_WAIT
+    if (d.empty()) {
+	setup_disks();
+	d = next_dir();
+	if (d.empty()) {
+	    *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
+	    return;
+	}
+    }
+
+    
+    
     
     *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }

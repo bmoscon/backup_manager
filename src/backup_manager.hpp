@@ -37,7 +37,8 @@ public:
 private:
     void worker();
     void setup_disks();
-    void check_dir();
+    Directory next_dir();
+    void check_dir(Directory&);
     
     std::thread _main_thread;
     std::vector<std::string> _disk_names;
