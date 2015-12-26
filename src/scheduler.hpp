@@ -39,6 +39,7 @@ public:
     void add(const std::string&, Schedulable*);
     void remove(const std::string&);
     void stop();
+    std::unordered_map<std::string, state_e> get_states();
 
 private:
     void main_thread();

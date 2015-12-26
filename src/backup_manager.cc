@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <unistd.h>
 
-#include "disk.hpp"
 #include "config_parse.hpp"
 #include "backup_manager.hpp"
 #include "common.hpp"
@@ -125,6 +124,7 @@ void BackupManager::worker()
     Directory current_dir;
     
     while (_state != SHUTDOWN) {
+	*_log << DEBUG << "Current state: " << state_to_str(_state) << std::endl;
 	switch (_state) {
 	case INIT:
 	    setup_disks();

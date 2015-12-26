@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <cassert>
 #include <vector>
+#include <iostream>
 
 #include "scheduler.hpp"
 
@@ -110,6 +111,19 @@ void Scheduler::stop()
 }
 
 
+std::unordered_map<std::string, state_e> Scheduler::get_states()
+{
+    std::unordered_map<std::string, state_e> ret;
+    _lock.lock();
+
+    for (cmap_it it = _s_map.cbegin(); it != _s_map.cend(); ++it) {
+	ret.insert(std::make_pair(it->first, it->second->get_state()));
+    }
+
+    _lock.unlock();
+    return (ret);
+}
+
 void Scheduler::main_thread()
 {
     std::vector<std::string> to_remove;
@@ -124,6 +138,9 @@ void Scheduler::main_thread()
 	    
 	    if (n != c) {
 		switch (n) {
+		case INIT:
+		    it->second->init();
+		    break;
 		case RUN:
 		    it->second->run();
 		    break;
@@ -135,6 +152,7 @@ void Scheduler::main_thread()
 		    to_remove.push_back(it->first);
 		    break;
 		default:
+		    std::cout << "current " << c << "prev " << p << "next " << n << std::endl;
 		    assert(false);
 		}
 	    }

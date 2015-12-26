@@ -24,6 +24,9 @@ typedef enum state_e : uint8_t {
     SHUTDOWN
 } state_e;
 
+std::string state_to_str(const state_e& s);
+
+
 class Schedulable {
 public:
     Schedulable() : _state(NONE), _prev_state(NONE) {}
