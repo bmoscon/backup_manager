@@ -44,6 +44,7 @@ BackupManager::BackupManager(const std::string& cfg)
 	}
 
 	_db = new BackupManagerDB(ip, user, pass, _log);
+	_db->init_tables();
 	
 	ConfigParse::const_iterator it = config.begin("Dirs");
 	    
@@ -200,7 +201,9 @@ void BackupManager::check_dir(Directory& d)
 
     Directory from_db = _db->get(d);
 
-    if (d != from_db) {
+    if (!from_db.files.size()) {
+	_db->insert(d);
+    } else if (d != from_db) {
 	if (from_db.files.size() > d.files.size()) {
 	    *_log << WARNING << "Database entry for directory " << d.path << " has more files "
 		" than disk" << std::endl;
