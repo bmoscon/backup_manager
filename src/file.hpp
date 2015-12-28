@@ -12,7 +12,7 @@
  * 10/06/2014 - add new constructor for Directory
  * 11/26/2015 - various improvements
  * 11/27/2015 - directory comparison
- *
+ * 12/27/2015 - add != comparison for Directory
  */
 
 #ifndef __FILE_OBJ__
@@ -53,10 +53,12 @@ struct Directory {
     bool empty() const;
     bool valid() const;
     bool operator==(const Directory&) const;
+    bool operator!=(const Directory&) const;
     bool identical(const Directory&) const;
 };
 
 typedef std::unordered_map<std::string, File>::const_iterator file_cit;
+typedef std::unordered_map<std::string, File>::iterator file_it;
 
 std::ostream& operator<<(std::ostream&, const Directory&);
 std::ostream& operator<<(std::ostream&, const File&); 

@@ -12,7 +12,7 @@
  * 10/06/2014 - add new constructor for Directory
  * 11/26/2015 - various improvements
  * 11/27/2015 - directory comparison
- *
+ * 12/27/2015 - add != comparison for Directory
  */
 
 #include <sys/stat.h>
@@ -102,6 +102,12 @@ bool Directory::valid() const
 bool Directory::operator==(const Directory& d) const
 {
     return ((name == d.name) && (files == d.files));
+}
+
+
+bool  Directory::operator!=(const Directory& d) const
+{
+    return (!(*this == d));
 }
 
 

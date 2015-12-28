@@ -198,8 +198,33 @@ void BackupManager::check_dir(Directory& d)
 	return;
     }
 
-    *_log << "Dir is: \n"  << d << std::endl << std::endl;
-    
+    Directory from_db = _db->get(d);
+
+    if (d != from_db) {
+	if (from_db.files.size() > d.files.size()) {
+	    *_log << WARNING << "Database entry for directory " << d.path << " has more files "
+		" than disk" << std::endl;
+	    for (file_cit it = from_db.files.cbegin(); it != from_db.files.cend(); ++it) {
+		if (d.files.find(it->first) == d.files.end()) {
+		    *_log << WARNING << "File " << it->second <<
+			" is in DB but not on disk." << std::endl;
+		}
+	    }
+	}
+	for (file_it it = d.files.begin(); it != d.files.end(); ++it) {
+	    file_it from_db_it = from_db.files.find(it->first);
+	    if (from_db_it == from_db.files.end()) {
+		_db->insert(it->second);
+	    } else {
+		if (from_db_it->second != it->second) {
+		    *_log << WARNING << "File " << it->second << " does NOT match DB record!"
+			  << std::endl;
+		}
+		it->second.checked = std::time(NULL);
+		_db->update(it->second);
+	    }   
+	}
+    }
     
     *_log << DEBUG << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
 }
