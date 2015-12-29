@@ -119,9 +119,9 @@ int main(int argc, char* argv[])
     s.start();
 
     // all output via logging now
-    //close(STDIN_FILENO);
-    //close(STDOUT_FILENO);
-    //close(STDERR_FILENO);
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
     
     while (running) {	
 	sleep(30);
