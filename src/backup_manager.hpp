@@ -1,6 +1,6 @@
 /* Backup Manager
  * 
- * Copyright (c) 2012-2014 Bryant Moscon - bmoscon@gmail.com
+ * Copyright (c) 2012-2016 Bryant Moscon - bmoscon@gmail.com
  * 
  * Please see the LICENSE file for the terms and conditions 
  * associated with this software.
