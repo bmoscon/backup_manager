@@ -1,5 +1,6 @@
 # Backup Manager
 
+[![License](https://img.shields.io/badge/license-XFree86-blue.svg)](LICENSE)
 
 A simple, but full featured manager of backups. Syncs data stores, performs integrity checks, repairs and/or reports inconsistencies, all according to your schedule. 
 
