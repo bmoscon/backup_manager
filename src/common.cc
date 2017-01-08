@@ -1,6 +1,6 @@
 /* Common Functions
  * 
- * Copyright (c) 2012-2014 Bryant Moscon - bmoscon@gmail.com
+ * Copyright (c) 2012-2017 Bryant Moscon - bmoscon@gmail.com
  * 
  * Please see the LICENSE file for the terms and conditions 
  * associated with this software.
@@ -8,6 +8,7 @@
  *
  * 04/26/2014 - Initial open source release
  * 09/01/2014 - Copy Routines
+ * 01/08/2017 - static analysis fix
  *
  */
 
@@ -68,7 +69,6 @@ bool copyz(const char *in, const char *out, const uint32_t chunk)
 }
 
 
-
 bool copyposix(const char *in, const char *out, const uint32_t chunk)
 {
     char buffer[chunk];
@@ -95,7 +95,6 @@ bool copyposix(const char *in, const char *out, const uint32_t chunk)
 
     return (true);
 }
-
 
 
 bool copyansi(const char *in, const char *out, const uint32_t chunk)
