@@ -104,19 +104,22 @@ bool copyansi(const char *in, const char *out, const uint32_t chunk)
    size_t ret;
 
    FILE *src = fopen(in, "r");
+   if (!src) {
+       return (false);
+   }
    FILE *dst = fopen(out, "w");
-   
-   if (!src || !dst) {
+   if (!dst) {
+       fclose(src);
        return (false);
    }
 
    while ((ret = fread(buffer, 1, chunk, src))) {
        fwrite(buffer, 1, ret, dst);
    }
-
+   
    fclose(dst);
    fclose(src);
-
+   
    return (true);
 }
 
